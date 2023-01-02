@@ -1,25 +1,25 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
 export default class Demo extends Phaser.Scene {
   constructor() {
-    super('GameScene');
+    super("GameScene");
   }
 
   preload() {
-    this.load.image('logo', 'assets/phaser3-logo.png');
+    this.load.image("logo", "assets/phaser3-logo.png");
   }
 
   create() {
-    const logo = this.add.image(400, 70, 'logo');
-    this.add.text(0,0,'Hello World')
+    const logo = this.add.image(400, 70, "logo");
+    this.add.text(0, 0, "Hello World");
 
     this.tweens.add({
       targets: logo,
       y: 350,
       duration: 1500,
-      ease: 'Sine.inOut',
+      ease: "Sine.inOut",
       yoyo: true,
-      repeat: -1
+      repeat: -1,
     });
   }
 }
