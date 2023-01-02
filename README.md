@@ -1,36 +1,27 @@
-# Phaser 3 TypeScript Project Template
+<h1 align="center">
+  <br>
+  <a href="https://github.com/geocine/phaser3-rollup-typescript#readme"><img src="https://i.imgur.com/6lcIxDs.png" alt="header" width="600"/></a>
+  <br>
+  Phaser 3 TypeScript Starter
+  <br>
+</h1>
 
-This quick-start project template combines Phaser 3.50 with [TypeScript 4](https://www.typescriptlang.org/) and uses [Rollup](https://rollupjs.org) for bundling.
-
-## Requirements
-
-[Node.js](https://nodejs.org) is required to install dependencies and run scripts via `npm`.
+This is a [Phaser 3](https://github.com/photonstorm/phaser) starter with [TypeScript](https://www.typescriptlang.org/), [Rollup](https://rollupjs.org) with ⚡️ lightning fast HMR through [Vite](https://vitejs.dev/).
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
-| `npm install` | Install project dependencies |
-| `npm run watch` | Build project and open web server running project, watching for changes |
-| `npm run dev` | Builds project and open web server, but do not watch for changes |
-| `npm run build` | Builds code bundle with production settings (minification, no source maps, etc..) |
+| `yarn install` | Install project dependencies |
+| `yarn dev` | Builds project and open web server, watching for changes |
+| `yarn build` | Builds code bundle with production settings  |
+| `yarn serve` | Run a web server to serve built code bundle |
 
-## Writing Code
+## Development
 
-After cloning the repo, run `npm install` from your project directory. Then, you can start the local development
-server by running `npm run watch`. The first time you run this you should see the following demo run:
+After cloning the repo, run `yarn install` from your project directory. Then, you can start the local development
+server by running `yarn dev` and navigate to http://localhost:3000.
 
-![Screenshot](screenshot.png "Phaser 3 Example")
+## Production
 
-After starting the development server with `npm run watch`, you can edit any files in the `src` folder
-and Rollup will automatically recompile and reload your server (available at `http://localhost:10001`
-by default).
-
-## Configuring Rollup
-
-* Edit the file `rollup.config.dev.js` to edit the development build.
-* Edit the file `rollup.config.dist.js` to edit the distribution build.
-
-You will find lots of comments inside the rollup config files to help you do this.
-
-Note that due to the build process involved, it can take around 20 seconds to build the initial bundle. Times will vary based on CPU and local drive speeds. The development config does not minify the code in order to save build time, but it does generate source maps. If you do not require these, disable them in the config to speed it up further.
+After running `yarn build`, the files you need for production will be on the `dist` folder. To test code on your `dist` folder, run `yarn serve` and navigate to http://localhost:5000
