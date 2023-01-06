@@ -9,5 +9,15 @@ export default {
     height: 600,
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
-  }
+  },
+  physics: {
+    default: 'matter',
+    arcade: {
+        gravity: { y: 0 },
+        debug: {
+          showBody:true,
+          showStaticBody: true
+        }
+    }
+},
 };
