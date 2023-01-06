@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "lint": "npx eslint src\\**\\*.ts"
+    "lint": "npx eslint src\\**\\*.ts --fix"
   },
   "repository": {
     "type": "git",
