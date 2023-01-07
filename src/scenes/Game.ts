@@ -5,6 +5,7 @@ import config from "../config";
 enum assets {
   CRANBERRY = "cranberry",
   BUSH = "bush",
+  ROCK = "rock",
   PADDLESEGMENT = "paddleSegment",
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
@@ -44,6 +45,7 @@ export default class Demo extends Phaser.Scene {
   preload() {
     this.load.image(assets.CRANBERRY, "assets/cranberry.png");
     this.load.image(assets.BUSH, "assets/bush.png");
+    this.load.image(assets.ROCK, "assets/rock.png");
     this.load.image(assets.PADDLESEGMENT, "assets/paddle-segment.png");
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
@@ -285,10 +287,10 @@ export default class Demo extends Phaser.Scene {
 
   createRocks(count: number) {
     for (let i = 0; i < count; i++) {
-      const bush = this.matter.add.image(
+      const rock = this.matter.add.image(
         getRandomInt(0, config.scale?.width ?? 500),
         getRandomInt(0, config.scale?.height ?? 500),
-        assets.BUSH,
+        assets.ROCK,
         0,
         {
           mass: 0.1,
