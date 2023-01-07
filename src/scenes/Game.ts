@@ -17,7 +17,7 @@ enum berryData {
 const segmentLength = 50;
 const numberOfSegments = 10;
 const segmentStartingGap = 5;
-const jointLength = 7;
+const jointLength = 0;
 const jointStiffness = 0.4;
 const paddleEndWeight = 50;
 const anchorDragForceMultiplier = 0.2;
@@ -53,6 +53,8 @@ export default class Demo extends Phaser.Scene {
     // Create all the segments
     const segments: Phaser.Physics.Matter.Image[] = [];
 
+    const group = this.matter.world.nextGroup(true);
+
     // Add all the middle segments
     for (let i = 0; i < numberOfSegments; i++) {
       segments.push(
@@ -64,9 +66,9 @@ export default class Demo extends Phaser.Scene {
           {
             mass: 0.1,
             scale: { x: 1, y: 1 },
-            frictionAir: 0.08,
+            frictionAir: 0.28,
           }
-        )
+        ).setCollisionGroup(group)
       );
     }
 
@@ -77,11 +79,11 @@ export default class Demo extends Phaser.Scene {
       this.matter.add.joint(
         segments[index + 1],
         segment,
-        jointLength,
+        0,
         jointStiffness,
         {
-          pointA: { x: segmentLength * 0.5, y: 0 },
-          pointB: { x: -segmentLength * 0.5, y: 0 },
+          pointA: { x: (segmentLength * 0.5 + jointLength), y: 0 },
+          pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
         }
       );
     });
@@ -93,17 +95,17 @@ export default class Demo extends Phaser.Scene {
       assets.PADDLEEND,
       0,
       { ignoreGravity: true, frictionAir: 0.4 }
-    );
+    ).setCollisionGroup(group);
     startSegment.setFixedRotation();
     startSegment.setMass(paddleEndWeight);
     this.matter.add.joint(
       startSegment,
       segments[0],
-      jointLength,
+      0,
       jointStiffness,
       {
         pointA: { x: 0, y: 0 },
-        pointB: { x: segmentLength * 0.5, y: 0 },
+        pointB: { x: (segmentLength * 0.5 + jointLength), y: 0 },
       }
     );
 
@@ -114,17 +116,17 @@ export default class Demo extends Phaser.Scene {
       assets.PADDLEEND,
       0,
       { ignoreGravity: true, frictionAir: 0.4 }
-    );
+    ).setCollisionGroup(group);
     endSegment.setFixedRotation();
     endSegment.setMass(paddleEndWeight);
     this.matter.add.joint(
       endSegment,
       segments[segments.length - 1],
-      jointLength,
+      0,
       jointStiffness,
       {
         pointA: { x: 0, y: 0 },
-        pointB: { x: -segmentLength * 0.5, y: 0 },
+        pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
       }
     );
 
