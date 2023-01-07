@@ -17,16 +17,20 @@ enum berryData {
   CURRENT_HEALTH = "health",
 }
 
+// pontoon/segments/rope/snake
 const segmentLength = 20;
 const numberOfSegments = 10;
 const segmentStartingGap = 5;
 const jointLength = 0;
 const jointStiffness = 0.4;
 const jointDamping = 1.0;
-const paddleEndWeight = 0.5;
 const paddleFriction = 0.5;
-const anchorDragForceMultiplier = 0.02;
 const paddleCooldownMilliseconds = 120;
+
+// Player
+const playerMass = 2;
+const playerMoveForce = 0.02;
+const playerSpoolForceMultiplier = 0.6;
 
 type Segment = {
   joint?: MatterJS.ConstraintType;
@@ -38,7 +42,6 @@ export default class Demo extends Phaser.Scene {
   berryCollisionCategory: number;
   segmentGroup: number;
   player: Phaser.Physics.Matter.Image;
-  cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   keys: { [key: string]: Phaser.Input.Keyboard.Key };
   grabbing?: Segment;
   segments: Segment[] = [];
@@ -64,15 +67,16 @@ export default class Demo extends Phaser.Scene {
     this.segmentGroup = this.matter.world.nextGroup(true);
 
     this.createPlayer(140, 140);
-    this.createPontoon(100, 100);
+    this.createPontoon(config.scale?.width / 2, config.scale?.height - 100);
     // this.createBushes(10);
-    // this.createRocks(20);
+    this.createRocks(20);
     this.createBerries(300, 10, 10, config.scale?.width, 500);
-    this.createBucket(100, 100);
+    this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
     this.toggleGrabbing();
 
     this.keys = this.input.keyboard.addKeys({
       retract: "shift",
+      spool: "space",
       left: "a",
       right: "d",
       up: "w",
@@ -80,15 +84,14 @@ export default class Demo extends Phaser.Scene {
     }) as {
       [key: string]: Phaser.Input.Keyboard.Key;
     };
-    this.input.keyboard.on("keydown", (key: { key: string }) => {
-      // todo: need this anymore?
-    });
   }
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
 
-    const moveForce = 0.05;
+    const moveForce = this.keys.spool.isDown
+      ? playerMoveForce * playerSpoolForceMultiplier
+      : playerMoveForce;
     if (this.keys.left.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
     } else if (this.keys.right.isDown) {
@@ -118,13 +121,13 @@ export default class Demo extends Phaser.Scene {
     }
 
     if (
-      (this.cursors.space.isDown && this.grabbing) ||
-      (!this.cursors.space.isDown && !this.grabbing)
+      (this.keys.spool.isDown && this.grabbing) ||
+      (!this.keys.spool.isDown && !this.grabbing)
     ) {
       this.toggleGrabbing();
     }
 
-    if (this.cursors.space.isDown) {
+    if (this.keys.spool.isDown) {
       const endSegment = this.segments[this.segments.length - 1].item;
       const playerPos = new Phaser.Math.Vector2(
         this.player.x + this.player.width * 0.5,
@@ -149,9 +152,8 @@ export default class Demo extends Phaser.Scene {
   }
 
   createPlayer(x: number, y: number) {
-    this.cursors = this.input.keyboard.createCursorKeys();
     this.player = this.matter.add.image(x, y, assets.PLAYER, 0, {
-      mass: 10,
+      mass: playerMass,
       frictionAir: 0.5,
       shape: "circle",
     });
@@ -306,6 +308,7 @@ export default class Demo extends Phaser.Scene {
           frictionAir: 1,
           // isSensor: true,
           isStatic: true,
+          shape: "circle",
         }
       );
     }
