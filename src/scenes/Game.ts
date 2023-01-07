@@ -85,15 +85,14 @@ export default class Demo extends Phaser.Scene {
     if (!this.grabbing) {
       const endSegment = this.segments[this.segments.length - 1].item;
 
-      const playerPos = new Phaser.Math.Vector2(this.player.x, this.player.y);
-      const deltaPlayer = playerPos.subtract(
-        new Phaser.Math.Vector2(endSegment.x, endSegment.y)
-      );
+      const playerPos = new Phaser.Math.Vector2(this.player.x + this.player.width * 0.5, this.player.y + this.player.height * 0.5);
+      const segmentPos = new Phaser.Math.Vector2(endSegment.x + endSegment.width * 0.5, endSegment.y + endSegment.height * 0.5);
+
+      const deltaPlayer = playerPos.subtract(segmentPos);
       const dist = deltaPlayer.length();
-      if (dist > segmentLength + 50) {
-        //this.createSegment(this.player.x, this.player.y);
-        // this.createSegment(endSegment.x + segmentLength, endSegment.y);
-        // this.createSegment(endSegment.x, endSegment.y + segmentLength);
+      if (dist > (segmentLength * 2.0) + 10) {
+        const radians = Math.atan2(deltaPlayer.y, deltaPlayer.x);
+        this.createSegment(endSegment.x + segmentLength * Math.cos(radians), endSegment.y + segmentLength * Math.sin(radians), radians * 180 / Math.PI);
       }
     }
   }
@@ -139,11 +138,11 @@ export default class Demo extends Phaser.Scene {
     );
   }
 
-  createSegment(x: number, y: number) {
+  createSegment(x: number, y: number, angle?: number) {
     const isFirst = this.segments.length == 0;
     const segment = this.matter.add.image(x, y, assets.PADDLESEGMENT, 0, {
       mass: 1.0,
-      scale: { x: 1, y: 1 },
+      // scale: { x: 1, y: 1 },
       frictionAir: paddleFriction,
       isStatic: isFirst,
     });
@@ -152,15 +151,19 @@ export default class Demo extends Phaser.Scene {
     let joint: MatterJS.ConstraintType | undefined;
     if (!isFirst) {
       const anchor = this.segments[this.segments.length - 1].item;
-
-      // anchor
+      const offsetDist = segmentLength * 0.5 + jointLength;
+      const radians = anchor.angle * Math.PI / 180.0;
+      const xOff = offsetDist * Math.cos(radians);
+      const yOff = offsetDist * Math.sin(radians);
 
       joint = this.matter.add.joint(anchor, segment, 0, jointStiffness, {
-        pointA: { x: segmentLength * 0.5 + jointLength, y: 0 },
-        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
-        // angleA: 0,
+        pointA: { x: xOff, y: yOff },
+        pointB: { x: -offsetDist, y: 0 },
         damping: jointDamping,
       });
+    }
+    if (angle) {
+      segment.setAngle(angle);
     }
 
     this.segments.push({ joint, item: segment });
