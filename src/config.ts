@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-export default {
+const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "game",
   backgroundColor: "#33A5E7",
@@ -13,6 +13,9 @@ export default {
   physics: {
     default: "matter",
     matter: {
+      positionIterations: 10,
+      velocityIterations: 8,
+      constraintIterations: 4,
       gravity: { y: 0 },
       debug: {
         showBody: true,
@@ -21,3 +24,5 @@ export default {
     },
   },
 };
+
+export default config
