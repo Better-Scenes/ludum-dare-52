@@ -17,26 +17,32 @@ enum berryData {
   CURRENT_HEALTH = "health",
 }
 
-const segmentLength = 50;
+const segmentLength = 20;
 const numberOfSegments = 10;
 const segmentStartingGap = 5;
 const jointLength = 0;
-const jointStiffness = 0.1;
+const jointStiffness = 0.4;
+const jointDamping = 1.0;
 const paddleEndWeight = 0.5;
+const paddleFriction = 0.5;
 const anchorDragForceMultiplier = 0.02;
+const paddleCooldownMilliseconds = 120;
 
-type Grabber = {
-  joint: MatterJS.ConstraintType;
-  item?: Phaser.Physics.Matter.Image;
+type Segment = {
+  joint?: MatterJS.ConstraintType;
+  item: Phaser.Physics.Matter.Image;
 };
 
 export default class Demo extends Phaser.Scene {
   berries: Phaser.GameObjects.Group;
   berryCollisionCategory: number;
+  segmentGroup: number;
   player: Phaser.Physics.Matter.Image;
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-  grabbing?: Grabber;
-  endSegment: Phaser.Physics.Matter.Image;
+  keys: { [key: string]: Phaser.Input.Keyboard.Key };
+  grabbing?: Segment;
+  segments: Segment[] = [];
+  cooldown = 0;
 
   constructor() {
     super("GameScene");
@@ -55,28 +61,90 @@ export default class Demo extends Phaser.Scene {
   create() {
     this.berries = this.add.group();
     this.berryCollisionCategory = this.matter.world.nextCategory();
+    this.segmentGroup = this.matter.world.nextGroup(true);
 
-    this.createPlayer(110, 110);
+    this.createPlayer(140, 140);
     this.createPontoon(100, 100);
     // this.createBushes(10);
-    this.createRocks(20);
-    this.createBerries(100, 10, 10, 550);
-    this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
+    // this.createRocks(20);
+    this.createBerries(300, 10, 10, config.scale?.width, 500);
+    this.createBucket(100, 100);
+    this.toggleGrabbing();
+
+    this.keys = this.input.keyboard.addKeys({
+      retract: "shift",
+      left: "a",
+      right: "d",
+      up: "w",
+      down: "s",
+    }) as {
+      [key: string]: Phaser.Input.Keyboard.Key;
+    };
+    this.input.keyboard.on("keydown", (key: { key: string }) => {
+      // todo: need this anymore?
+    });
   }
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
 
     const moveForce = 0.05;
-    if (this.cursors.left.isDown) {
+    if (this.keys.left.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
-    } else if (this.cursors.right.isDown) {
+    } else if (this.keys.right.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: moveForce, y: 0 }));
     }
-    if (this.cursors.down.isDown) {
+    if (this.keys.down.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: moveForce }));
-    } else if (this.cursors.up.isDown) {
+    } else if (this.keys.up.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: -moveForce }));
+    }
+    if (
+      this.keys.retract.isDown &&
+      this.segments.length > 1 &&
+      this.cooldown + paddleCooldownMilliseconds <= Date.now()
+    ) {
+      this.cooldown = Date.now();
+      if (this.grabbing) {
+        this.toggleGrabbing();
+      }
+      const endSegment = this.segments[this.segments.length - 1];
+      if (endSegment.joint) {
+        this.matter.world.removeConstraint(endSegment.joint);
+      }
+      endSegment.item.destroy();
+      this.segments.splice(-1, 1);
+      this.toggleGrabbing();
+    }
+
+    if (
+      (this.cursors.space.isDown && this.grabbing) ||
+      (!this.cursors.space.isDown && !this.grabbing)
+    ) {
+      this.toggleGrabbing();
+    }
+
+    if (this.cursors.space.isDown) {
+      const endSegment = this.segments[this.segments.length - 1].item;
+      const playerPos = new Phaser.Math.Vector2(
+        this.player.x + this.player.width * 0.5,
+        this.player.y + this.player.height * 0.5
+      );
+      const segmentPos = new Phaser.Math.Vector2(
+        endSegment.x + endSegment.width * 0.5,
+        endSegment.y + endSegment.height * 0.5
+      );
+
+      const deltaPlayer = playerPos.subtract(segmentPos);
+      const dist = deltaPlayer.length();
+      if (dist > segmentLength * 2.0 + 5) {
+        const radians = Math.atan2(deltaPlayer.y, deltaPlayer.x);
+        this.createSegment(
+          endSegment.x + segmentLength * Math.cos(radians),
+          endSegment.y + segmentLength * Math.sin(radians),
+          (radians * 180) / Math.PI
+        );
+      }
     }
   }
 
@@ -85,20 +153,22 @@ export default class Demo extends Phaser.Scene {
     this.player = this.matter.add.image(x, y, assets.PLAYER, 0, {
       mass: 10,
       frictionAir: 0.5,
+      shape: "circle",
     });
     this.player.setFixedRotation();
-    this.input.keyboard.on("keydown", (key: { key: string }) => {
-      if (key.key == " ") {
-        if (this.grabbing) {
-          this.matter.world.removeConstraint(this.grabbing.joint);
-          delete this.grabbing;
-        } else {
-          this.grabbing = {
-            joint: this.matter.add.joint(this.endSegment, this.player, 20, 0.2),
-          };
-        }
-      }
-    });
+  }
+
+  toggleGrabbing() {
+    if (this.grabbing) {
+      this.matter.world.removeConstraint(this.grabbing.joint);
+      delete this.grabbing;
+    } else {
+      const endSegment = this.segments[this.segments.length - 1].item;
+      this.grabbing = {
+        joint: this.matter.add.joint(endSegment, this.player, 25, 0.2),
+        item: endSegment,
+      };
+    }
   }
 
   createBucket(x: number, y: number) {
@@ -115,120 +185,58 @@ export default class Demo extends Phaser.Scene {
     );
   }
 
-  createPontoon(startX: number, startY: number) {
-    // Create all the segments
-    const segments: Phaser.Physics.Matter.Image[] = [];
+  createSegment(x: number, y: number, angle?: number) {
+    const isFirst = this.segments.length == 0;
+    const segment = this.matter.add.image(x, y, assets.PADDLESEGMENT, 0, {
+      mass: 1.0,
+      // scale: { x: 1, y: 1 },
+      frictionAir: paddleFriction,
+      isStatic: isFirst,
+    });
+    segment.setCollisionGroup(this.segmentGroup);
 
-    const group = this.matter.world.nextGroup(true);
+    let joint: MatterJS.ConstraintType | undefined;
+    if (!isFirst) {
+      const anchor = this.segments[this.segments.length - 1].item;
+      const offsetDist = segmentLength * 0.5 + jointLength;
+      const radians = (anchor.angle * Math.PI) / 180.0;
+      const xOff = offsetDist * Math.cos(radians);
+      const yOff = offsetDist * Math.sin(radians);
 
-    // Add all the middle segments
-    for (let i = 0; i < numberOfSegments; i++) {
-      const segment = this.matter.add.image(
-        startX + (segmentLength + segmentStartingGap) * i,
-        startY,
-        assets.PADDLESEGMENT,
-        0,
-        {
-          mass: 1.0,
-          scale: { x: 1, y: 1 },
-          frictionAir: 0.28,
-        }
-      );
-      segment.setCollisionGroup(group);
-      segments.push(segment);
+      joint = this.matter.add.joint(anchor, segment, 0, jointStiffness, {
+        pointA: { x: xOff, y: yOff },
+        pointB: { x: -offsetDist, y: 0 },
+        damping: jointDamping,
+      });
+    }
+    if (angle) {
+      segment.setAngle(angle);
     }
 
-    // Join all the segments
-    segments.map((segment, index) => {
-      if (!segments[index + 1]) return;
-
-      this.matter.add.joint(segments[index + 1], segment, 0, jointStiffness, {
-        pointA: { x: segmentLength * 0.5 + jointLength, y: 0 },
-        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
-      });
-    });
-
-    // Attach an anchor to the start
-    const startSegment = this.matter.add.image(
-      startX,
-      startY,
-      assets.PADDLEEND,
-      0,
-      {
-        ignoreGravity: true,
-        frictionAir: 0.4,
-      }
-    );
-
-    startSegment.setCollisionGroup(group);
-    startSegment.setFixedRotation();
-    startSegment.setMass(paddleEndWeight);
-    this.matter.add.joint(startSegment, segments[0], 0, jointStiffness, {
-      pointA: { x: 0, y: 0 },
-      pointB: { x: segmentLength * 0.5 + jointLength, y: 0 },
-    });
-
-    // Attach an anchor to the end
-    this.endSegment = this.matter.add.image(
-      startX,
-      startY + 50,
-      assets.PADDLEEND,
-      0,
-      {
-        ignoreGravity: true,
-        frictionAir: 0.4,
-      }
-    );
-
-    this.endSegment.setCollisionGroup(group);
-    this.endSegment.setFixedRotation();
-    this.endSegment.setMass(paddleEndWeight);
-    this.matter.add.joint(
-      this.endSegment,
-      segments[segments.length - 1],
-      0,
-      jointStiffness,
-      {
-        pointA: { x: 0, y: 0 },
-        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
-      }
-    );
-
-    startSegment.setInteractive();
-    this.endSegment.setInteractive();
-    this.input.setDraggable([startSegment, this.endSegment]);
-
-    this.input.on(
-      "drag",
-      function (
-        pointer: Phaser.Input.Pointer,
-        gameObject: Phaser.Physics.Matter.Image,
-        dragX: number,
-        dragY: number
-      ) {
-        const dragPositionVector = new Phaser.Math.Vector2(dragX, dragY);
-        const dragVector = dragPositionVector.subtract(
-          gameObject.body.position
-        );
-
-        if (dragVector.length() < 20) {
-          return;
-        }
-
-        const normalizedVector = dragVector
-          .normalize()
-          .scale(anchorDragForceMultiplier);
-
-        gameObject.applyForce(normalizedVector);
-      }
-    );
+    this.segments.push({ joint, item: segment });
   }
 
-  createBerries(count: number, startX: number, startY: number, range = 10) {
+  createPontoon(startX: number, startY: number) {
+    // Create all the segments
+    for (let i = 0; i < numberOfSegments; i++) {
+      this.createSegment(
+        startX + (segmentLength + segmentStartingGap) * i,
+        startY
+      );
+    }
+  }
+
+  createBerries(
+    count: number,
+    startX: number,
+    startY: number,
+    xrange = 10,
+    yrange = 10
+  ) {
     for (let i = 0; i < count; i++) {
       const berry = this.matter.add.image(
-        getRandomInt(startX, startX + range),
-        getRandomInt(startY, startY + range),
+        getRandomInt(startX, startX + xrange),
+        getRandomInt(startY, startY + yrange),
         assets.CRANBERRY,
         0,
         { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.04 }
