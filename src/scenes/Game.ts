@@ -58,17 +58,19 @@ export default class Demo extends Phaser.Scene {
     // Add all the middle segments
     for (let i = 0; i < numberOfSegments; i++) {
       segments.push(
-        this.matter.add.image(
-          startX + (segmentLength + segmentStartingGap) * i,
-          startY,
-          assets.PADDLESEGMENT,
-          0,
-          {
-            mass: 0.1,
-            scale: { x: 1, y: 1 },
-            frictionAir: 0.28,
-          }
-        ).setCollisionGroup(group)
+        this.matter.add
+          .image(
+            startX + (segmentLength + segmentStartingGap) * i,
+            startY,
+            assets.PADDLESEGMENT,
+            0,
+            {
+              mass: 0.1,
+              scale: { x: 1, y: 1 },
+              frictionAir: 0.28,
+            }
+          )
+          .setCollisionGroup(group)
       );
     }
 
@@ -76,47 +78,33 @@ export default class Demo extends Phaser.Scene {
     segments.map((segment, index) => {
       if (!segments[index + 1]) return;
 
-      this.matter.add.joint(
-        segments[index + 1],
-        segment,
-        0,
-        jointStiffness,
-        {
-          pointA: { x: (segmentLength * 0.5 + jointLength), y: 0 },
-          pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
-        }
-      );
+      this.matter.add.joint(segments[index + 1], segment, 0, jointStiffness, {
+        pointA: { x: segmentLength * 0.5 + jointLength, y: 0 },
+        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
+      });
     });
 
     // Attach an anchor to the start
-    const startSegment = this.matter.add.image(
-      startX,
-      startY,
-      assets.PADDLEEND,
-      0,
-      { ignoreGravity: true, frictionAir: 0.4 }
-    ).setCollisionGroup(group);
+    const startSegment = this.matter.add
+      .image(startX, startY, assets.PADDLEEND, 0, {
+        ignoreGravity: true,
+        frictionAir: 0.4,
+      })
+      .setCollisionGroup(group);
     startSegment.setFixedRotation();
     startSegment.setMass(paddleEndWeight);
-    this.matter.add.joint(
-      startSegment,
-      segments[0],
-      0,
-      jointStiffness,
-      {
-        pointA: { x: 0, y: 0 },
-        pointB: { x: (segmentLength * 0.5 + jointLength), y: 0 },
-      }
-    );
+    this.matter.add.joint(startSegment, segments[0], 0, jointStiffness, {
+      pointA: { x: 0, y: 0 },
+      pointB: { x: segmentLength * 0.5 + jointLength, y: 0 },
+    });
 
     // Attach an anchor to the end
-    const endSegment = this.matter.add.image(
-      startX,
-      startY + 50,
-      assets.PADDLEEND,
-      0,
-      { ignoreGravity: true, frictionAir: 0.4 }
-    ).setCollisionGroup(group);
+    const endSegment = this.matter.add
+      .image(startX, startY + 50, assets.PADDLEEND, 0, {
+        ignoreGravity: true,
+        frictionAir: 0.4,
+      })
+      .setCollisionGroup(group);
     endSegment.setFixedRotation();
     endSegment.setMass(paddleEndWeight);
     this.matter.add.joint(
@@ -126,7 +114,7 @@ export default class Demo extends Phaser.Scene {
       jointStiffness,
       {
         pointA: { x: 0, y: 0 },
-        pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
+        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
       }
     );
 
