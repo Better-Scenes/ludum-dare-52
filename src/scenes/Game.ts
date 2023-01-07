@@ -65,6 +65,24 @@ export default class Demo extends Phaser.Scene {
     this.createBerries(300, 10, 10, config.scale?.width, 500);
     this.createBucket(100, 100);
     this.toggleGrabbing();
+
+    this.input.keyboard.on("keydown", (key: { key: string }) => {
+      if (key.key == " ") {
+        this.toggleGrabbing();
+      }
+      if (key.key === "z" && this.segments.length > 1) {
+        if (this.grabbing) {
+          this.toggleGrabbing();
+        }
+        const endSegment = this.segments[this.segments.length - 1];
+        if (endSegment.joint) {
+          this.matter.world.removeConstraint(endSegment.joint);
+        }
+        endSegment.item.destroy();
+        this.segments.splice(-1, 1);
+        this.toggleGrabbing();
+      }
+    });
   }
 
   update(time: number, delta: number): void {
@@ -104,11 +122,6 @@ export default class Demo extends Phaser.Scene {
       frictionAir: 0.5,
     });
     this.player.setFixedRotation();
-    this.input.keyboard.on("keydown", (key: { key: string }) => {
-      if (key.key == " ") {
-        this.toggleGrabbing();
-      }
-    });
   }
 
   toggleGrabbing() {
