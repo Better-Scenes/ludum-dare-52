@@ -8,6 +8,7 @@ enum assets {
   PADDLESEGMENT = "paddleSegment",
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
+  PLAYER = "player",
 }
 
 enum berryData {
@@ -23,9 +24,18 @@ const jointStiffness = 0.1;
 const paddleEndWeight = 0.5;
 const anchorDragForceMultiplier = 0.02;
 
+type Grabber = {
+  joint: MatterJS.ConstraintType;
+  item?: Phaser.Physics.Matter.Image;
+};
+
 export default class Demo extends Phaser.Scene {
   berries: Phaser.GameObjects.Group;
   berryCollisionCategory: number;
+  player: Phaser.Physics.Matter.Image;
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+  grabbing?: Grabber;
+  endSegment: Phaser.Physics.Matter.Image;
 
   constructor() {
     super("GameScene");
@@ -37,22 +47,56 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.PADDLESEGMENT, "assets/paddle-segment.png");
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
+    this.load.image(assets.PLAYER, "assets/player.png");
   }
 
   create() {
     this.berries = this.add.group();
     this.berryCollisionCategory = this.matter.world.nextCategory();
-    console.log("berryCollisionCategory", this.berryCollisionCategory);
 
+    this.createPlayer(110, 110);
     this.createPontoon(100, 100);
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(100, 10, 10, 550);
-    this.createBucket(300, 300);
+    this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
   }
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
+
+    const moveForce = 0.05;
+    if (this.cursors.left.isDown) {
+      this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
+    } else if (this.cursors.right.isDown) {
+      this.player.applyForce(new Phaser.Math.Vector2({ x: moveForce, y: 0 }));
+    }
+    if (this.cursors.down.isDown) {
+      this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: moveForce }));
+    } else if (this.cursors.up.isDown) {
+      this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: -moveForce }));
+    }
+  }
+
+  createPlayer(x: number, y: number) {
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.player = this.matter.add.image(x, y, assets.PLAYER, 0, {
+      mass: 10,
+      frictionAir: 0.5,
+    });
+    this.player.setFixedRotation();
+    this.input.keyboard.on("keydown", (key: { key: string }) => {
+      if (key.key == " ") {
+        if (this.grabbing) {
+          this.matter.world.removeConstraint(this.grabbing.joint);
+          delete this.grabbing;
+        } else {
+          this.grabbing = {
+            joint: this.matter.add.joint(this.endSegment, this.player, 20, 0.2),
+          };
+        }
+      }
+    });
   }
 
   createBucket(x: number, y: number) {
@@ -123,7 +167,7 @@ export default class Demo extends Phaser.Scene {
     });
 
     // Attach an anchor to the end
-    const endSegment = this.matter.add.image(
+    this.endSegment = this.matter.add.image(
       startX,
       startY + 50,
       assets.PADDLEEND,
@@ -134,11 +178,11 @@ export default class Demo extends Phaser.Scene {
       }
     );
 
-    endSegment.setCollisionGroup(group);
-    endSegment.setFixedRotation();
-    endSegment.setMass(paddleEndWeight);
+    this.endSegment.setCollisionGroup(group);
+    this.endSegment.setFixedRotation();
+    this.endSegment.setMass(paddleEndWeight);
     this.matter.add.joint(
-      endSegment,
+      this.endSegment,
       segments[segments.length - 1],
       0,
       jointStiffness,
@@ -149,8 +193,8 @@ export default class Demo extends Phaser.Scene {
     );
 
     startSegment.setInteractive();
-    endSegment.setInteractive();
-    this.input.setDraggable([startSegment, endSegment]);
+    this.endSegment.setInteractive();
+    this.input.setDraggable([startSegment, this.endSegment]);
 
     this.input.on(
       "drag",
