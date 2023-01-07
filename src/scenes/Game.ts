@@ -1,4 +1,4 @@
-import Phaser, { GameObjects } from "phaser";
+import Phaser from "phaser";
 
 import config from "../config";
 
@@ -20,6 +20,7 @@ const segmentStartingGap = 5;
 const jointLength = 7;
 const jointStiffness = 0.4;
 const paddleEndWeight = 50;
+const anchorDragForceMultiplier = 0.2;
 
 export default class Demo extends Phaser.Scene {
   berries: Phaser.GameObjects.Group;
@@ -42,9 +43,6 @@ export default class Demo extends Phaser.Scene {
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(100, 10, 10, 550);
-    this.matter.add.mouseSpring();
-
-    const cursors = this.input.keyboard.createCursorKeys();
   }
 
   update(time: number, delta: number): void {
@@ -127,6 +125,27 @@ export default class Demo extends Phaser.Scene {
       {
         pointA: { x: 0, y: 0 },
         pointB: { x: -segmentLength * 0.5, y: 0 },
+      }
+    );
+
+    startSegment.setInteractive();
+    endSegment.setInteractive();
+    this.input.setDraggable([startSegment, endSegment]);
+
+    this.input.on(
+      "drag",
+      function (
+        pointer: Phaser.Input.Pointer,
+        gameObject: Phaser.Physics.Matter.Image,
+        dragX: number,
+        dragY: number
+      ) {
+        const dragPositionVector = new Phaser.Math.Vector2(dragX, dragY);
+        const dragVector = dragPositionVector
+          .subtract(gameObject.body.position)
+          .normalize()
+          .scale(anchorDragForceMultiplier);
+        gameObject.applyForce(dragVector);
       }
     );
   }
