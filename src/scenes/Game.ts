@@ -7,6 +7,7 @@ enum assets {
   BUSH = "bush",
   PADDLESEGMENT = "paddleSegment",
   PADDLEEND = "paddleEnd",
+  COLLECTOR = "collector",
 }
 
 enum berryData {
@@ -18,12 +19,13 @@ const segmentLength = 50;
 const numberOfSegments = 10;
 const segmentStartingGap = 5;
 const jointLength = 0;
-const jointStiffness = 0.4;
-const paddleEndWeight = 50;
-const anchorDragForceMultiplier = 0.2;
+const jointStiffness = 0.1;
+const paddleEndWeight = 0.5;
+const anchorDragForceMultiplier = 0.02;
 
 export default class Demo extends Phaser.Scene {
   berries: Phaser.GameObjects.Group;
+  berryCollisionCategory: number;
 
   constructor() {
     super("GameScene");
@@ -34,22 +36,40 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.BUSH, "assets/bush.png");
     this.load.image(assets.PADDLESEGMENT, "assets/paddle-segment.png");
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
+    this.load.image(assets.COLLECTOR, "assets/collector.png");
   }
 
   create() {
     this.berries = this.add.group();
+    this.berryCollisionCategory = this.matter.world.nextCategory();
+    console.log("berryCollisionCategory", this.berryCollisionCategory);
 
-    this.createFloat(100, 100);
+    this.createPontoon(100, 100);
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(100, 10, 10, 550);
+    this.createBucket(300, 300);
   }
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
   }
 
-  createFloat(startX: number, startY: number) {
+  createBucket(x: number, y: number) {
+    const collector = this.matter.add.image(x, y, assets.COLLECTOR, 0, {
+      isSensor: true,
+    });
+
+    collector.setCollidesWith(this.berryCollisionCategory);
+    collector.setOnCollide(
+      (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
+        collision.bodyA.gameObject.destroy();
+        console.log("collided");
+      }
+    );
+  }
+
+  createPontoon(startX: number, startY: number) {
     // Create all the segments
     const segments: Phaser.Physics.Matter.Image[] = [];
 
@@ -57,35 +77,29 @@ export default class Demo extends Phaser.Scene {
 
     // Add all the middle segments
     for (let i = 0; i < numberOfSegments; i++) {
-      segments.push(
-        this.matter.add.image(
-          startX + (segmentLength + segmentStartingGap) * i,
-          startY,
-          assets.PADDLESEGMENT,
-          0,
-          {
-            mass: 0.1,
-            scale: { x: 1, y: 1 },
-            frictionAir: 0.28,
-          }
-        ).setCollisionGroup(group)
+      const segment = this.matter.add.image(
+        startX + (segmentLength + segmentStartingGap) * i,
+        startY,
+        assets.PADDLESEGMENT,
+        0,
+        {
+          mass: 1.0,
+          scale: { x: 1, y: 1 },
+          frictionAir: 0.28,
+        }
       );
+      segment.setCollisionGroup(group);
+      segments.push(segment);
     }
 
     // Join all the segments
     segments.map((segment, index) => {
       if (!segments[index + 1]) return;
 
-      this.matter.add.joint(
-        segments[index + 1],
-        segment,
-        0,
-        jointStiffness,
-        {
-          pointA: { x: (segmentLength * 0.5 + jointLength), y: 0 },
-          pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
-        }
-      );
+      this.matter.add.joint(segments[index + 1], segment, 0, jointStiffness, {
+        pointA: { x: segmentLength * 0.5 + jointLength, y: 0 },
+        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
+      });
     });
 
     // Attach an anchor to the start
@@ -94,20 +108,19 @@ export default class Demo extends Phaser.Scene {
       startY,
       assets.PADDLEEND,
       0,
-      { ignoreGravity: true, frictionAir: 0.4 }
-    ).setCollisionGroup(group);
-    startSegment.setFixedRotation();
-    startSegment.setMass(paddleEndWeight);
-    this.matter.add.joint(
-      startSegment,
-      segments[0],
-      0,
-      jointStiffness,
       {
-        pointA: { x: 0, y: 0 },
-        pointB: { x: (segmentLength * 0.5 + jointLength), y: 0 },
+        ignoreGravity: true,
+        frictionAir: 0.4,
       }
     );
+
+    startSegment.setCollisionGroup(group);
+    startSegment.setFixedRotation();
+    startSegment.setMass(paddleEndWeight);
+    this.matter.add.joint(startSegment, segments[0], 0, jointStiffness, {
+      pointA: { x: 0, y: 0 },
+      pointB: { x: segmentLength * 0.5 + jointLength, y: 0 },
+    });
 
     // Attach an anchor to the end
     const endSegment = this.matter.add.image(
@@ -115,8 +128,13 @@ export default class Demo extends Phaser.Scene {
       startY + 50,
       assets.PADDLEEND,
       0,
-      { ignoreGravity: true, frictionAir: 0.4 }
-    ).setCollisionGroup(group);
+      {
+        ignoreGravity: true,
+        frictionAir: 0.4,
+      }
+    );
+
+    endSegment.setCollisionGroup(group);
     endSegment.setFixedRotation();
     endSegment.setMass(paddleEndWeight);
     this.matter.add.joint(
@@ -126,7 +144,7 @@ export default class Demo extends Phaser.Scene {
       jointStiffness,
       {
         pointA: { x: 0, y: 0 },
-        pointB: { x: (-segmentLength * 0.5 - jointLength), y: 0 },
+        pointB: { x: -segmentLength * 0.5 - jointLength, y: 0 },
       }
     );
 
@@ -143,11 +161,19 @@ export default class Demo extends Phaser.Scene {
         dragY: number
       ) {
         const dragPositionVector = new Phaser.Math.Vector2(dragX, dragY);
-        const dragVector = dragPositionVector
-          .subtract(gameObject.body.position)
+        const dragVector = dragPositionVector.subtract(
+          gameObject.body.position
+        );
+
+        if (dragVector.length() < 20) {
+          return;
+        }
+
+        const normalizedVector = dragVector
           .normalize()
           .scale(anchorDragForceMultiplier);
-        gameObject.applyForce(dragVector);
+
+        gameObject.applyForce(normalizedVector);
       }
     );
   }
@@ -161,6 +187,7 @@ export default class Demo extends Phaser.Scene {
         0,
         { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.04 }
       );
+      berry.setCollisionCategory(this.berryCollisionCategory);
       berry.setDataEnabled();
       const randomHealth = getRandomInt(10000, 20000);
       berry.setData({
