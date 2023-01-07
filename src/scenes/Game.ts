@@ -39,14 +39,16 @@ export default class Demo extends Phaser.Scene {
     this.berries = this.add.group();
 
     this.createFloat(100, 100);
-    this.createBushes(10);
+    // this.createBushes(10);
+    this.createRocks(20);
+    this.createBerries(100, 10, 10, 550);
     this.matter.add.mouseSpring();
 
     const cursors = this.input.keyboard.createCursorKeys();
   }
 
   update(time: number, delta: number): void {
-    this.reduceBerriesHealth(delta);
+    // this.reduceBerriesHealth(delta);
   }
 
   createFloat(startX: number, startY: number) {
@@ -177,7 +179,7 @@ export default class Demo extends Phaser.Scene {
           mass: 0.1,
           scale: { x: 1, y: 1 },
           frictionAir: 1,
-          isSensor: true,
+          // isSensor: true,
           isStatic: true,
         }
       );
@@ -186,6 +188,24 @@ export default class Demo extends Phaser.Scene {
         this.createBerries(getRandomInt(5, 10), bush.x, bush.y);
         bush.destroy();
       });
+    }
+  }
+
+  createRocks(count: number) {
+    for (let i = 0; i < count; i++) {
+      const bush = this.matter.add.image(
+        getRandomInt(0, config.scale?.width ?? 500),
+        getRandomInt(0, config.scale?.height ?? 500),
+        assets.BUSH,
+        0,
+        {
+          mass: 0.1,
+          scale: { x: 1, y: 1 },
+          frictionAir: 1,
+          // isSensor: true,
+          isStatic: true,
+        }
+      );
     }
   }
 }
