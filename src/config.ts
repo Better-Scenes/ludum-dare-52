@@ -25,4 +25,4 @@ const config: Phaser.Types.Core.GameConfig = {
   },
 };
 
-export default config
+export default config;
