@@ -6,12 +6,20 @@ enum assets {
   CRANBERRY = "cranberry",
   BUSH = "bush",
   PADDLESEGMENT = "paddleSegment",
+  PADDLEEND = "paddleEnd",
 }
 
 enum berryData {
   START_HEALTH = "startHealth",
   CURRENT_HEALTH = "health",
 }
+
+const segmentLength = 50;
+const numberOfSegments = 10;
+const segmentStartingGap = 5;
+const jointLength = 7;
+const jointStiffness = 0.4;
+const paddleEndWeight = 50;
 
 export default class Demo extends Phaser.Scene {
   berries: Phaser.GameObjects.Group;
@@ -24,6 +32,7 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.CRANBERRY, "assets/cranberry.png");
     this.load.image(assets.BUSH, "assets/bush.png");
     this.load.image(assets.PADDLESEGMENT, "assets/paddle-segment.png");
+    this.load.image(assets.PADDLEEND, "assets/float-end.png");
   }
 
   create() {
@@ -41,41 +50,83 @@ export default class Demo extends Phaser.Scene {
   }
 
   createFloat(startX: number, startY: number) {
-    const segmentLength = 50;
-    const numberOfSegments = 10;
+    // Create all the segments
+    const segments: Phaser.Physics.Matter.Image[] = [];
+
+    // Add all the middle segments
+    for (let i = 0; i < numberOfSegments; i++) {
+      segments.push(
+        this.matter.add.image(
+          startX + (segmentLength + segmentStartingGap) * i,
+          startY,
+          assets.PADDLESEGMENT,
+          0,
+          {
+            mass: 0.1,
+            scale: { x: 1, y: 1 },
+            frictionAir: 0.08,
+          }
+        )
+      );
+    }
+
+    // Join all the segments
+    segments.map((segment, index) => {
+      if (!segments[index + 1]) return;
+
+      this.matter.add.joint(
+        segments[index + 1],
+        segment,
+        jointLength,
+        jointStiffness,
+        {
+          pointA: { x: segmentLength * 0.5, y: 0 },
+          pointB: { x: -segmentLength * 0.5, y: 0 },
+        }
+      );
+    });
+
+    // Attach an anchor to the start
     const startSegment = this.matter.add.image(
       startX,
       startY,
-      assets.PADDLESEGMENT,
+      assets.PADDLEEND,
       0,
-      { ignoreGravity: true }
+      { ignoreGravity: true, frictionAir: 0.4 }
     );
-    const jointSize = 5;
     startSegment.setFixedRotation();
-    startSegment.setMass(50000);
-    startSegment.setStatic(true);
+    startSegment.setMass(paddleEndWeight);
+    this.matter.add.joint(
+      startSegment,
+      segments[0],
+      jointLength,
+      jointStiffness,
+      {
+        pointA: { x: 0, y: 0 },
+        pointB: { x: segmentLength * 0.5, y: 0 },
+      }
+    );
 
-    startX += segmentLength;
-    let prev = startSegment;
-
-    for (let i = 0; i < numberOfSegments; i++) {
-      const segment = this.matter.add.image(
-        startX,
-        startY,
-        assets.PADDLESEGMENT,
-        0,
-        { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.08 }
-      );
-      this.matter.add.joint(prev, segment, jointSize, 0.4, {
-        pointA: { x: segmentLength * 0.5, y: 0 },
+    // Attach an anchor to the end
+    const endSegment = this.matter.add.image(
+      startX,
+      startY + 50,
+      assets.PADDLEEND,
+      0,
+      { ignoreGravity: true, frictionAir: 0.4 }
+    );
+    endSegment.setFixedRotation();
+    endSegment.setMass(paddleEndWeight);
+    this.matter.add.joint(
+      endSegment,
+      segments[segments.length - 1],
+      jointLength,
+      jointStiffness,
+      {
+        pointA: { x: 0, y: 0 },
         pointB: { x: -segmentLength * 0.5, y: 0 },
-      });
-      segment.setMass(100);
-
-      prev = segment;
-
-      startX += segmentLength + jointSize;
-    }
+      }
+    );
   }
 
   createBerries(count: number, startX: number, startY: number, range = 10) {
