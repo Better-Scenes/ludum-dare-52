@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser, { GameObjects } from "phaser";
 
 import config from "../config";
 
@@ -8,7 +8,14 @@ enum assets {
   PADDLESEGMENT = "paddleSegment",
 }
 
+enum berryData {
+  START_HEALTH = "startHealth",
+  CURRENT_HEALTH = "health",
+}
+
 export default class Demo extends Phaser.Scene {
+  berries: Phaser.GameObjects.Group;
+
   constructor() {
     super("GameScene");
   }
@@ -20,11 +27,17 @@ export default class Demo extends Phaser.Scene {
   }
 
   create() {
+    this.berries = this.add.group();
+
     this.createFloat(100, 100);
     this.createBushes(10);
     this.matter.add.mouseSpring();
 
     const cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  update(time: number, delta: number): void {
+    this.reduceBerriesHealth(delta);
   }
 
   createFloat(startX: number, startY: number) {
@@ -74,7 +87,32 @@ export default class Demo extends Phaser.Scene {
         0,
         { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.04 }
       );
+      berry.setDataEnabled();
+      const randomHealth = getRandomInt(10000, 20000);
+      berry.setData({
+        [berryData.START_HEALTH]: randomHealth,
+        [berryData.CURRENT_HEALTH]: randomHealth,
+      });
+      this.berries.add(berry);
     }
+  }
+
+  reduceBerriesHealth(delta: number) {
+    this.berries.children.each((berry) => {
+      let health = berry.getData(berryData.CURRENT_HEALTH) as number;
+      const maxHealth = berry.getData(berryData.START_HEALTH) as number;
+      health -= delta;
+      if (health <= 0) {
+        berry.destroy();
+      }
+      berry.setData(berryData.CURRENT_HEALTH, health);
+
+      const healthPercent = 100 - (health / maxHealth) * 100;
+      const tint = new Phaser.Display.Color(255, 255, 255).darken(
+        healthPercent
+      );
+      (berry as Phaser.Physics.Matter.Image).setTint(tint.color);
+    });
   }
 
   createBushes(count: number) {
@@ -94,7 +132,6 @@ export default class Demo extends Phaser.Scene {
       );
       bush.setInteractive();
       bush.on("pointerdown", () => {
-        console.log("clicked bush");
         this.createBerries(getRandomInt(5, 10), bush.x, bush.y);
         bush.destroy();
       });
