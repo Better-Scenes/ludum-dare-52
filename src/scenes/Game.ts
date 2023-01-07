@@ -25,6 +25,7 @@ const jointDamping = 1.0;
 const paddleEndWeight = 0.5;
 const paddleFriction = 0.5;
 const anchorDragForceMultiplier = 0.02;
+const paddleCooldownMilliseconds = 120;
 
 type Segment = {
   joint?: MatterJS.ConstraintType;
@@ -37,8 +38,10 @@ export default class Demo extends Phaser.Scene {
   segmentGroup: number;
   player: Phaser.Physics.Matter.Image;
   cursors: Phaser.Types.Input.Keyboard.CursorKeys;
+  keys: { [key: string]: Phaser.Input.Keyboard.Key };
   grabbing?: Segment;
   segments: Segment[] = [];
+  cooldown = 0;
 
   constructor() {
     super("GameScene");
@@ -66,22 +69,17 @@ export default class Demo extends Phaser.Scene {
     this.createBucket(100, 100);
     this.toggleGrabbing();
 
+    this.keys = this.input.keyboard.addKeys({
+      retract: "shift",
+      left: "a",
+      right: "d",
+      up: "w",
+      down: "s",
+    }) as {
+      [key: string]: Phaser.Input.Keyboard.Key;
+    };
     this.input.keyboard.on("keydown", (key: { key: string }) => {
-      if (key.key == " ") {
-        this.toggleGrabbing();
-      }
-      if (key.key === "z" && this.segments.length > 1) {
-        if (this.grabbing) {
-          this.toggleGrabbing();
-        }
-        const endSegment = this.segments[this.segments.length - 1];
-        if (endSegment.joint) {
-          this.matter.world.removeConstraint(endSegment.joint);
-        }
-        endSegment.item.destroy();
-        this.segments.splice(-1, 1);
-        this.toggleGrabbing();
-      }
+      // todo: need this anymore?
     });
   }
 
@@ -89,28 +87,61 @@ export default class Demo extends Phaser.Scene {
     // this.reduceBerriesHealth(delta);
 
     const moveForce = 0.05;
-    if (this.cursors.left.isDown) {
+    if (this.keys.left.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
-    } else if (this.cursors.right.isDown) {
+    } else if (this.keys.right.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: moveForce, y: 0 }));
     }
-    if (this.cursors.down.isDown) {
+    if (this.keys.down.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: moveForce }));
-    } else if (this.cursors.up.isDown) {
+    } else if (this.keys.up.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: -moveForce }));
     }
+    if (
+      this.keys.retract.isDown &&
+      this.segments.length > 1 &&
+      this.cooldown + paddleCooldownMilliseconds <= Date.now()
+    ) {
+      this.cooldown = Date.now();
+      if (this.grabbing) {
+        this.toggleGrabbing();
+      }
+      const endSegment = this.segments[this.segments.length - 1];
+      if (endSegment.joint) {
+        this.matter.world.removeConstraint(endSegment.joint);
+      }
+      endSegment.item.destroy();
+      this.segments.splice(-1, 1);
+      this.toggleGrabbing();
+    }
 
-    if (!this.grabbing) {
+    if (
+      (this.cursors.space.isDown && this.grabbing) ||
+      (!this.cursors.space.isDown && !this.grabbing)
+    ) {
+      this.toggleGrabbing();
+    }
+
+    if (this.cursors.space.isDown) {
       const endSegment = this.segments[this.segments.length - 1].item;
-
-      const playerPos = new Phaser.Math.Vector2(this.player.x + this.player.width * 0.5, this.player.y + this.player.height * 0.5);
-      const segmentPos = new Phaser.Math.Vector2(endSegment.x + endSegment.width * 0.5, endSegment.y + endSegment.height * 0.5);
+      const playerPos = new Phaser.Math.Vector2(
+        this.player.x + this.player.width * 0.5,
+        this.player.y + this.player.height * 0.5
+      );
+      const segmentPos = new Phaser.Math.Vector2(
+        endSegment.x + endSegment.width * 0.5,
+        endSegment.y + endSegment.height * 0.5
+      );
 
       const deltaPlayer = playerPos.subtract(segmentPos);
       const dist = deltaPlayer.length();
-      if (dist > (segmentLength * 2.0) + 10) {
+      if (dist > segmentLength * 2.0 + 5) {
         const radians = Math.atan2(deltaPlayer.y, deltaPlayer.x);
-        this.createSegment(endSegment.x + segmentLength * Math.cos(radians), endSegment.y + segmentLength * Math.sin(radians), radians * 180 / Math.PI);
+        this.createSegment(
+          endSegment.x + segmentLength * Math.cos(radians),
+          endSegment.y + segmentLength * Math.sin(radians),
+          (radians * 180) / Math.PI
+        );
       }
     }
   }
@@ -120,6 +151,7 @@ export default class Demo extends Phaser.Scene {
     this.player = this.matter.add.image(x, y, assets.PLAYER, 0, {
       mass: 10,
       frictionAir: 0.5,
+      shape: "circle",
     });
     this.player.setFixedRotation();
   }
@@ -131,7 +163,7 @@ export default class Demo extends Phaser.Scene {
     } else {
       const endSegment = this.segments[this.segments.length - 1].item;
       this.grabbing = {
-        joint: this.matter.add.joint(endSegment, this.player, 20, 0.2),
+        joint: this.matter.add.joint(endSegment, this.player, 25, 0.2),
         item: endSegment,
       };
     }
@@ -165,7 +197,7 @@ export default class Demo extends Phaser.Scene {
     if (!isFirst) {
       const anchor = this.segments[this.segments.length - 1].item;
       const offsetDist = segmentLength * 0.5 + jointLength;
-      const radians = anchor.angle * Math.PI / 180.0;
+      const radians = (anchor.angle * Math.PI) / 180.0;
       const xOff = offsetDist * Math.cos(radians);
       const yOff = offsetDist * Math.sin(radians);
 
