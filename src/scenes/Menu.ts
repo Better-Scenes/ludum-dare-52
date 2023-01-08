@@ -78,6 +78,15 @@ export default class Menu extends Phaser.Scene {
         getScreenHalfHeight() + 180
       );
     }
+    const highScore = localStorage.getItem("highScore");
+    if (highScore) {
+      renderTextAt(
+        this,
+        `The highest score is: ${highScore}`,
+        getScreenHalfWidth(),
+        getScreenHalfHeight() + 200
+      );
+    }
   }
 
   update(time: number, delta: number): void {}

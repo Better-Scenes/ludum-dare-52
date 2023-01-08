@@ -36,11 +36,24 @@ export default class GameOver extends Phaser.Scene {
       getScreenHalfHeight() + 25
     );
 
+    const highScore = localStorage.getItem("highScore");
+    let intHighScore = highScore ? parseInt(highScore) : 0;
+    if (input.score > intHighScore) {
+      intHighScore = input.score;
+      renderTextAt(
+        this,
+        `That is a new high score!`,
+        getScreenHalfWidth(),
+        getScreenHalfHeight() + 50
+      );
+    }
+    localStorage.setItem("highScore", `${intHighScore}`);
+
     renderTextAt(
       this,
       "Return to Menu",
       getScreenHalfWidth(),
-      getScreenHalfHeight() + 50
+      getScreenHalfHeight() + 75
     )
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => {
