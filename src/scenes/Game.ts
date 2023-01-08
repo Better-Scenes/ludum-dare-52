@@ -35,6 +35,7 @@ const segmentStartingGap = 5;
 const jointLength = 0;
 const jointStiffness = 0.4;
 const jointDamping = 1.0;
+const paddleMass = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
 const gameLengthInMs = 1000000;
@@ -42,7 +43,9 @@ const gameLengthInMs = 1000000;
 // Player
 const playerMass = 2;
 const playerMoveForce = 0.02;
-const playerSpoolForceMultiplier = 0.6;
+const playerSpoolForceMultiplier = 0.7;
+const playerRetractForceMultiplier = 1.0;
+const playerGrabStiffness = 0.2;
 
 // Spiders
 const spiderSpawnProbability = 0.02;
@@ -177,9 +180,14 @@ export default class Demo extends Phaser.Scene {
       "Spiders rescued: " + spidersRescused.toString(),
     ]);
 
-    const moveForce = this.keys.spool.isDown
+    let moveForce = this.keys.spool.isDown
       ? playerMoveForce * playerSpoolForceMultiplier
       : playerMoveForce;
+    if (this.keys.spool.isDown) {
+      moveForce *= playerSpoolForceMultiplier;
+    } else if (this.keys.retract.isDown) {
+      moveForce *= playerRetractForceMultiplier;
+    }
 
     if (this.keys.left.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
@@ -267,7 +275,12 @@ export default class Demo extends Phaser.Scene {
     } else {
       const endSegment = this.segments[this.segments.length - 1].item;
       this.grabbing = {
-        joint: this.matter.add.joint(endSegment, this.player, 25, 0.2),
+        joint: this.matter.add.joint(
+          endSegment,
+          this.player,
+          25,
+          playerGrabStiffness
+        ),
         item: endSegment,
       };
     }
@@ -346,8 +359,7 @@ export default class Demo extends Phaser.Scene {
   createSegment(x: number, y: number, angle?: number) {
     const isFirst = this.segments.length == 0;
     const segment = this.matter.add.image(x, y, assets.PADDLESEGMENT, 0, {
-      mass: 1.0,
-      // scale: { x: 1, y: 1 },
+      mass: paddleMass,
       frictionAir: paddleFriction,
       isStatic: isFirst,
     });
