@@ -15,6 +15,7 @@ enum assets {
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
   PLAYER = "player",
+  PARTICLE = "particle",
 }
 
 enum berryData {
@@ -32,7 +33,7 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 10000;
+const gameLengthInMs = 100000;
 
 // Player
 const playerMass = 2;
@@ -54,10 +55,12 @@ export default class Demo extends Phaser.Scene {
   berryCollisionCategory: number;
   segmentGroup: number;
   player: Phaser.Physics.Matter.Image;
+  collectorEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
   keys: { [key: string]: Phaser.Input.Keyboard.Key };
   grabbing?: Segment;
   segments: Segment[] = [];
   cooldown = 0;
+  particleEmitUntil = 0;
   uiText: GameObjects.Text;
 
   constructor() {
@@ -82,6 +85,7 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
     this.load.image(assets.PLAYER, "assets/player.png");
+    this.load.image(assets.PARTICLE, "assets/particle.png");
   }
 
   create() {
@@ -94,7 +98,7 @@ export default class Demo extends Phaser.Scene {
     this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
     // this.createBushes(10);
     this.createRocks(20);
-    this.createBerries(300, 10, 10, config.scale?.width, 500);
+    this.createBerries(300, 10, 10, config.scale?.width, 400);
     this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
     this.toggleGrabbing();
 
@@ -127,6 +131,10 @@ export default class Demo extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
+
+    if (this.particleEmitUntil < new Date().getTime()) {
+      this.collectorEmitter.stop();
+    }
 
     timeRemaining -= delta;
     if (timeRemaining <= 0) {
@@ -232,6 +240,16 @@ export default class Demo extends Phaser.Scene {
     const collector = this.matter.add.image(x, y, assets.COLLECTOR, 0, {
       isSensor: true,
     });
+    const particles = this.add.particles(assets.PARTICLE);
+    this.collectorEmitter = particles.createEmitter({
+      x,
+      y,
+      speed: 100,
+      lifespan: 800,
+      blendMode: "ADD",
+      on: false,
+      scale: { min: 1, max: 3 },
+    });
 
     collector.setCollidesWith(this.berryCollisionCategory);
     collector.setOnCollide(
@@ -240,6 +258,8 @@ export default class Demo extends Phaser.Scene {
           (collision.bodyA.gameObject as Phaser.Physics.Matter.Image).getData(
             berryData.BERRY_VALUE
           ) ?? 1;
+        this.collectorEmitter.start();
+        this.particleEmitUntil = new Date().getTime() + 100;
         collision.bodyA.gameObject.destroy();
       }
     );
