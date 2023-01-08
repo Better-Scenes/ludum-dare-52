@@ -508,21 +508,20 @@ export default class Demo extends Phaser.Scene {
 
   createRocks(count: number) {
     for (let i = 0; i < count; i++) {
-      this.matter.add.image(
+      const rock = this.matter.add.image(
         getRandomInt(0, config.scale?.width ?? 500),
         getRandomInt(0, config.scale?.height ?? 500),
         assets.ROCK,
         0,
         {
           label: "rock",
-          mass: 0.1,
           scale: { x: 1, y: 1 },
-          frictionAir: 1,
-          // isSensor: true,
           isStatic: true,
           shape: "circle",
         }
       );
+      rock.setScale(getRandomFloat(0.5, 1.2));
+      rock.setAngle(getRandomInt(0, 360));
     }
   }
 }
