@@ -1,4 +1,5 @@
 import config from "./config";
+import Phaser from "phaser";
 
 export const textStyle = {
   fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
@@ -41,4 +42,32 @@ export function getRandomInt(min: number, max: number) {
 
 export function getRandomFloat(min: number, max: number): number {
   return Math.random() * (max - min) + min;
+}
+
+export function getRandomVertexColors() {
+  // Create a random color for each vertex.
+  // RandomRGB returns a Phaser.Display.Color object with random RGB values.
+  const RandomRGB = Phaser.Display.Color.RandomRGB;
+  return {
+    topLeft: RandomRGB(),
+    topRight: RandomRGB(),
+    bottomLeft: RandomRGB(),
+    bottomRight: RandomRGB(),
+  };
+}
+
+export function getTintForVertexColor(vertex, value, fromColors, toColors) {
+  // Interpolate between the fromColor and toColor of the current vertex,
+  // using the current tween value.
+  const tint = Phaser.Display.Color.Interpolate.ColorWithColor(
+    fromColors[vertex],
+    toColors[vertex],
+    100,
+    value
+  );
+
+  // Interpolate.ColorWithColor returns a Javascript object with
+  // interpolated RGB values. We convert it to a Phaser.Display.Color object
+  // in order to get the integer value of the tint color.
+  return Phaser.Display.Color.ObjectToColor(tint).color;
 }

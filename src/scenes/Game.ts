@@ -1,12 +1,14 @@
-import Phaser, { GameObjects } from "phaser";
+import Phaser from "phaser";
 
 import config from "../config";
 import {
   getRandomFloat,
   getRandomInt,
+  getRandomVertexColors,
   getScreenHalfHeight,
   getScreenHalfWidth,
   getScreenSize,
+  getTintForVertexColor,
 } from "../utils";
 
 enum assets {
@@ -487,23 +489,35 @@ export default class Demo extends Phaser.Scene {
 
       if (Math.random() < rareBerryChance) {
         berry.setData(berryData.BERRY_VALUE, 10);
-        const tint = new Phaser.Display.Color(200, 200, 0);
+        let fromColors = getRandomVertexColors();
+        let toColors = getRandomVertexColors();
+        berry.setTint(
+          fromColors.topLeft.color,
+          fromColors.topRight.color,
+          fromColors.bottomLeft.color,
+          fromColors.bottomRight.color
+        );
 
         this.tweens.addCounter({
-          from: 255,
-          to: 0,
-          duration: 500,
-          yoyo: true,
+          from: 0,
+          to: 100,
+          duration: 2000,
           loop: -1,
           onUpdate: function (tween) {
-            const value = Math.floor(tween.getValue());
-
-            berry.setTintFill(0xff00ff, 0xff0000, 0x00ff00, 0x0000ff);
+            berry.setTintFill(
+              getTintForVertexColor(
+                "topLeft",
+                tween.getValue(),
+                fromColors,
+                toColors
+              )
+            );
+          },
+          onLoop: () => {
+            fromColors = toColors || fromColors;
+            toColors = getRandomVertexColors();
           },
         });
-      } else {
-        const tint = new Phaser.Display.Color(255, 255, 255);
-        berry.setTint(tint.color);
       }
       this.berries.add(berry);
     }
