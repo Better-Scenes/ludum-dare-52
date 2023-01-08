@@ -316,7 +316,6 @@ export default class Demo extends Phaser.Scene {
   ) {
     for (let i = 0; i < count; i++) {
       const berryScale = getRandomFloat(0.5, 1);
-      console.log(berryScale);
       const berry = this.matter.add.image(
         getRandomInt(startX, startX + xrange),
         getRandomInt(startY, startY + yrange),
