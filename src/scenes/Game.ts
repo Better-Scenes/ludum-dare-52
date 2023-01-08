@@ -51,8 +51,8 @@ const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
 
 // Spiders
-const spiderSpawnProbability = 0.02;
-const spiderLifetimeMilliseconds = 10000;
+const spiderSpawnProbability = 0.001;
+const spiderLifetimeMilliseconds = 20000;
 const spiderRescueSeconds = 5;
 
 // Berries
@@ -70,7 +70,7 @@ const collectorNoSpawnDistance = 100;
 //Game state
 let score = 0;
 let timeRemaining = gameLengthInMs;
-let spidersRescused = 0;
+let spidersRescued = 0;
 
 type Segment = {
   joint?: MatterJS.ConstraintType;
@@ -127,7 +127,7 @@ export default class Demo extends Phaser.Scene {
   create() {
     timeRemaining = gameLengthInMs;
     score = 0;
-    spidersRescused = 0;
+    spidersRescued = 0;
     this.cooldown = 0;
     this.berries = this.add.group();
 
@@ -188,7 +188,7 @@ export default class Demo extends Phaser.Scene {
     this.uiText.setText([
       "Score: " + score.toString(),
       "Time: " + parseInt(timeRemaining / 1000).toString(),
-      "Spiders rescued: " + spidersRescused.toString(),
+      "Spiders rescued: " + spidersRescued.toString(),
     ]);
 
     let moveForce = this.keys.spool.isDown
@@ -328,7 +328,7 @@ export default class Demo extends Phaser.Scene {
           return;
         }
         collected = true;
-        spidersRescused++;
+        spidersRescued++;
         timeRemaining += spiderRescueSeconds * 1000;
         spider.destroy();
         this.sounds[assets.SOUND_RESCUE].play();
