@@ -27,6 +27,7 @@ enum assets {
   SOUND_COLLECT = "soundCollect",
   SOUND_HURT = "soundHurt",
   SOUND_RESCUE = "soundRescue",
+  WATER_SHADER = "waterShader",
 }
 
 enum berryData {
@@ -141,6 +142,8 @@ export default class Demo extends Phaser.Scene {
     this.load.audio(assets.SOUND_COLLECT, "assets/collect.wav");
     this.load.audio(assets.SOUND_HURT, "assets/hurt.wav");
     this.load.audio(assets.SOUND_RESCUE, "assets/rescue.wav");
+
+    this.load.glsl(assets.WATER_SHADER, "assets/shaders/water.frag");
   }
 
   create() {
@@ -157,7 +160,10 @@ export default class Demo extends Phaser.Scene {
 
     this.shader = this.renderer.pipelines.add(
       "Water",
-      new WaterPipeline(this.game)
+      new WaterPipeline(
+        this.game,
+        this.cache.shader.get(assets.WATER_SHADER).fragmentSrc
+      )
     );
     this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
 
