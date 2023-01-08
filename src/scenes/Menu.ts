@@ -75,7 +75,7 @@ export default class Menu extends Phaser.Scene {
         this,
         `Your score in the previous game: ${input.score}`,
         getScreenHalfWidth(),
-        getScreenHalfHeight() + 100
+        getScreenHalfHeight() + 180
       );
     }
   }
