@@ -8,7 +8,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "lint": "npx eslint src\\**\\*.ts --fix",
-    "deploy": "git subtree push --prefix dist origin gh-pages"
+    "deploy": "npm run build && git subtree push --prefix dist origin gh-pages"
   },
   "repository": {
     "type": "git",
