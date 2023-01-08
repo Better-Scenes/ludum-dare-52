@@ -248,7 +248,7 @@ export default class Demo extends Phaser.Scene {
       lifespan: 800,
       blendMode: "ADD",
       on: false,
-      scale: 2,
+      scale: { min: 1, max: 3 },
     });
 
     collector.setCollidesWith(this.berryCollisionCategory);
