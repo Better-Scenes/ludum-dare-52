@@ -45,6 +45,7 @@ const playerSpoolForceMultiplier = 0.6;
 // Spiders
 const spiderSpawnProbability = 0.02;
 const spiderLifetimeMilliseconds = 10000;
+const spiderRescueSeconds = 5;
 
 //Game state
 let score = 0;
@@ -252,6 +253,12 @@ export default class Demo extends Phaser.Scene {
     const size = getScreenSize();
     const xpos = Math.random() * size.x;
     const ypos = Math.random() * size.y;
+
+    const existing = this.matter.intersectRect(xpos, ypos, 16, 16);
+    if (existing.some((item) => item.label === "rock")) {
+      return;
+    }
+
     let collected = false;
     const spider = this.matter.add.image(xpos, ypos, assets.SPIDER, 0, {
       mass: 0.1,
@@ -272,6 +279,7 @@ export default class Demo extends Phaser.Scene {
         }
         collected = true;
         spidersRescused++;
+        timeRemaining += spiderRescueSeconds * 1000;
         spider.destroy();
       }
     );
