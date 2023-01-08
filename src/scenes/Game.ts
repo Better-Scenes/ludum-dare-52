@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import Phaser, { GameObjects } from "phaser";
 
 import config from "../config";
 
@@ -15,6 +15,7 @@ enum assets {
 enum berryData {
   START_HEALTH = "startHealth",
   CURRENT_HEALTH = "health",
+  BERRY_VALUE = "berryValue",
 }
 
 // pontoon/segments/rope/snake
@@ -26,11 +27,16 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
+const gameLengthInMs = 30000;
 
 // Player
 const playerMass = 2;
 const playerMoveForce = 0.02;
 const playerSpoolForceMultiplier = 0.6;
+
+//Game state
+let score = 0;
+let timeRemaining = gameLengthInMs;
 
 type Segment = {
   joint?: MatterJS.ConstraintType;
@@ -46,6 +52,7 @@ export default class Demo extends Phaser.Scene {
   grabbing?: Segment;
   segments: Segment[] = [];
   cooldown = 0;
+  uiText: GameObjects.Text;
 
   constructor() {
     super("GameScene");
@@ -62,6 +69,8 @@ export default class Demo extends Phaser.Scene {
   }
 
   create() {
+    timeRemaining = gameLengthInMs;
+    score = 0;
     this.berries = this.add.group();
     this.berryCollisionCategory = this.matter.world.nextCategory();
     this.segmentGroup = this.matter.world.nextGroup(true);
@@ -84,10 +93,29 @@ export default class Demo extends Phaser.Scene {
     }) as {
       [key: string]: Phaser.Input.Keyboard.Key;
     };
+
+    this.uiText = this.add.text(20, 20, "", {
+      font: "16px Courier",
+      fill: "#00ff00",
+    });
+    this.uiText.setText([
+      "Score: " + score.toString(),
+      "Time: " + timeRemaining.toString(),
+    ]);
   }
 
   update(time: number, delta: number): void {
     // this.reduceBerriesHealth(delta);
+
+    timeRemaining -= delta;
+    if (timeRemaining <= 0) {
+      this.endGame();
+    }
+
+    this.uiText.setText([
+      "Score: " + score.toString(),
+      "Time: " + parseInt(timeRemaining / 1000).toString(),
+    ]);
 
     const moveForce = this.keys.spool.isDown
       ? playerMoveForce * playerSpoolForceMultiplier
@@ -151,6 +179,11 @@ export default class Demo extends Phaser.Scene {
     }
   }
 
+  endGame() {
+    //go to game over scene and display score
+    alert(`game over you suck, but you did score ${score}`);
+  }
+
   createPlayer(x: number, y: number) {
     this.player = this.matter.add.image(x, y, assets.PLAYER, 0, {
       mass: playerMass,
@@ -181,8 +214,11 @@ export default class Demo extends Phaser.Scene {
     collector.setCollidesWith(this.berryCollisionCategory);
     collector.setOnCollide(
       (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
+        score +=
+          (collision.bodyA.gameObject as Phaser.Physics.Matter.Image).getData(
+            berryData.BERRY_VALUE
+          ) ?? 1;
         collision.bodyA.gameObject.destroy();
-        console.log("collided");
       }
     );
   }
@@ -249,6 +285,7 @@ export default class Demo extends Phaser.Scene {
       berry.setData({
         [berryData.START_HEALTH]: randomHealth,
         [berryData.CURRENT_HEALTH]: randomHealth,
+        [berryData.BERRY_VALUE]: 1,
       });
       this.berries.add(berry);
     }
