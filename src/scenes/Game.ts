@@ -27,7 +27,7 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 30000;
+const gameLengthInMs = 10000;
 
 // Player
 const playerMass = 2;
@@ -44,6 +44,7 @@ type Segment = {
 };
 
 export default class Demo extends Phaser.Scene {
+  initialized = false;
   berries: Phaser.GameObjects.Group;
   berryCollisionCategory: number;
   segmentGroup: number;
@@ -56,6 +57,16 @@ export default class Demo extends Phaser.Scene {
 
   constructor() {
     super("GameScene");
+  }
+
+  init() {
+    this.segments = [];
+
+    if (!this.initialized) {
+      this.initialized = true;
+      this.berryCollisionCategory = this.matter.world.nextCategory();
+      this.segmentGroup = this.matter.world.nextGroup(true);
+    }
   }
 
   preload() {
@@ -71,9 +82,8 @@ export default class Demo extends Phaser.Scene {
   create() {
     timeRemaining = gameLengthInMs;
     score = 0;
+    this.cooldown = 0;
     this.berries = this.add.group();
-    this.berryCollisionCategory = this.matter.world.nextCategory();
-    this.segmentGroup = this.matter.world.nextGroup(true);
 
     this.createPlayer(140, 140);
     this.createPontoon(config.scale?.width / 2, config.scale?.height - 100);
@@ -102,6 +112,12 @@ export default class Demo extends Phaser.Scene {
       "Score: " + score.toString(),
       "Time: " + timeRemaining.toString(),
     ]);
+
+    this.input.keyboard.on("keydown", (key) => {
+      if (key.key == "Escape") {
+        this.scene.start("Menu");
+      }
+    });
   }
 
   update(time: number, delta: number): void {
@@ -120,6 +136,7 @@ export default class Demo extends Phaser.Scene {
     const moveForce = this.keys.spool.isDown
       ? playerMoveForce * playerSpoolForceMultiplier
       : playerMoveForce;
+
     if (this.keys.left.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: -moveForce, y: 0 }));
     } else if (this.keys.right.isDown) {
@@ -181,7 +198,8 @@ export default class Demo extends Phaser.Scene {
 
   endGame() {
     //go to game over scene and display score
-    alert(`game over you suck, but you did score ${score}`);
+    // alert(`game over you suck, but you did score ${score}`);
+    this.scene.start("GameOver");
   }
 
   createPlayer(x: number, y: number) {
