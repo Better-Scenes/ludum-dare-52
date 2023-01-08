@@ -53,6 +53,13 @@ const spiderRescueSeconds = 5;
 const edgeRepulsionForce = 0.00005;
 const edgeRepulsionDistance = 10;
 
+// Collector
+const collectorPosition = new Phaser.Math.Vector2(
+  getScreenHalfWidth(),
+  config.scale?.height - 100
+);
+const collectorNoSpawnDistance = 100;
+
 //Game state
 let score = 0;
 let timeRemaining = gameLengthInMs;
@@ -115,11 +122,11 @@ export default class Demo extends Phaser.Scene {
 
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createPlayer(140, 140);
-    this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
+    this.createPontoon(collectorPosition.x, collectorPosition.y);
     // this.createBushes(10);
     this.createRocks(20);
-    this.createBerries(300, 10, 10, config.scale?.width, 400);
-    this.createBucket(getScreenHalfWidth(), config.scale?.height - 100);
+    this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
+    this.createBucket(collectorPosition.x, collectorPosition.y);
     this.toggleGrabbing();
 
     this.keys = this.input.keyboard.addKeys({
@@ -379,9 +386,22 @@ export default class Demo extends Phaser.Scene {
   ) {
     for (let i = 0; i < count; i++) {
       const berryScale = getRandomFloat(0.5, 1);
-      const berry = this.matter.add.image(
+
+      const potentialSpawnPosition = new Phaser.Math.Vector2(
         getRandomInt(startX, startX + xrange),
-        getRandomInt(startY, startY + yrange),
+        getRandomInt(startY, startY + yrange)
+      );
+
+      if (
+        potentialSpawnPosition.distance(collectorPosition) <
+        collectorNoSpawnDistance
+      ) {
+        continue;
+      }
+
+      const berry = this.matter.add.image(
+        potentialSpawnPosition.x,
+        potentialSpawnPosition.y,
         assets.CRANBERRY,
         0,
         {
