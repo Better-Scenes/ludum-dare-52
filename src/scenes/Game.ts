@@ -52,6 +52,7 @@ const spiderRescueSeconds = 5;
 // Berries
 const edgeRepulsionForce = 0.00005;
 const edgeRepulsionDistance = 10;
+const numberOfBerries = 500;
 
 // Collector
 const collectorPosition = new Phaser.Math.Vector2(
@@ -125,7 +126,13 @@ export default class Demo extends Phaser.Scene {
     this.createPontoon(collectorPosition.x, collectorPosition.y);
     // this.createBushes(10);
     this.createRocks(20);
-    this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
+    this.createBerries(
+      numberOfBerries,
+      10,
+      10,
+      config.scale?.width,
+      config.scale?.height
+    );
     this.createBucket(collectorPosition.x, collectorPosition.y);
     this.toggleGrabbing();
 
