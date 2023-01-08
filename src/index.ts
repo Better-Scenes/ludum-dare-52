@@ -6,7 +6,7 @@ import GameOver from "./scenes/GameOver";
 
 new Phaser.Game(
   Object.assign(config, {
-    // scene: [MenuScene, GameScene],
-    scene: [MenuScene, GameScene, GameOver],
+    scene: [GameScene, MenuScene, GameOver],
+    // scene: [MenuScene, GameScene, GameOver],
   })
 );

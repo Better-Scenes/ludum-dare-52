@@ -51,7 +51,7 @@ const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
 
 // Spiders
-const spiderSpawnProbability = 0.001;
+const spiderSpawnProbability = 0.011;
 const spiderLifetimeMilliseconds = 20000;
 const spiderRescueSeconds = 5;
 
@@ -347,6 +347,7 @@ export default class Demo extends Phaser.Scene {
   createBucket(x: number, y: number) {
     const collector = this.matter.add.image(x, y, assets.COLLECTOR, 0, {
       isSensor: true,
+      label: "collector",
     });
     const particles = this.add.particles(assets.PARTICLE);
     this.collectorEmitter = particles.createEmitter({
@@ -365,22 +366,26 @@ export default class Demo extends Phaser.Scene {
     ]);
     collector.setOnCollide(
       (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
-        if (collision.bodyA.label == "berry") {
+        const target =
+          collision.bodyA.label == "collector"
+            ? collision.bodyB
+            : collision.bodyA;
+        if (target.label == "berry") {
           score +=
-            (collision.bodyA.gameObject as Phaser.Physics.Matter.Image).getData(
+            (target.gameObject as Phaser.Physics.Matter.Image).getData(
               berryData.BERRY_VALUE
             ) ?? 1;
           this.collectorEmitter.start();
           this.particleEmitUntil = new Date().getTime() + 100;
-          collision.bodyA.gameObject.destroy();
+          target.gameObject.destroy();
           this.sounds[assets.SOUND_COLLECT].play();
-        } else if (collision.bodyA.label == "spider") {
+        } else if (target.label == "spider") {
           if (score - 10 < 0) {
             score = 0;
           } else {
             score -= 10;
           }
-          collision.bodyA.gameObject.destroy();
+          target.gameObject.destroy();
           this.sounds[assets.SOUND_HURT].play();
         }
       }
