@@ -21,12 +21,10 @@ export default class GameOver extends Phaser.Scene {
   create(input: GameOverProps) {
     renderTextAt(
       this,
-      "GAME OVER",
+      "Game Over",
       getScreenHalfWidth(),
-      getScreenHalfHeight() - 25
-    )
-      .setInteractive({ useHandCursor: true })
-      .on("pointerdown", () => this.returnMenu());
+      getScreenHalfHeight() - 50
+    ).setFontSize(36);
 
     renderTextAt(
       this,
@@ -34,13 +32,20 @@ export default class GameOver extends Phaser.Scene {
       getScreenHalfWidth(),
       getScreenHalfHeight() + 25
     );
+
+    renderTextAt(
+      this,
+      "Return to Menu",
+      getScreenHalfWidth(),
+      getScreenHalfHeight() + 50
+    )
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => {
+        this.scene.start("Menu", { score: input.score });
+      });
   }
 
   update(time: number, delta: number): void {
     // todo: no-op
-  }
-
-  returnMenu() {
-    this.scene.start("Menu");
   }
 }

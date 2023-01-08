@@ -1,7 +1,11 @@
 import Phaser, { GameObjects } from "phaser";
 
 import config from "../config";
-import { getScreenHalfHeight, getScreenHalfWidth } from "../utils";
+import {
+  getRandomInt,
+  getScreenHalfHeight,
+  getScreenHalfWidth,
+} from "../utils";
 
 enum assets {
   CRANBERRY = "cranberry",
@@ -28,7 +32,7 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 400;
+const gameLengthInMs = 10000;
 
 // Player
 const playerMass = 2;
@@ -87,7 +91,7 @@ export default class Demo extends Phaser.Scene {
     this.berries = this.add.group();
 
     this.createPlayer(140, 140);
-    this.createPontoon(getScreenHalfWidth(), getScreenHalfHeight() - 100);
+    this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(300, 10, 10, config.scale?.width, 500);
@@ -368,17 +372,4 @@ export default class Demo extends Phaser.Scene {
       );
     }
   }
-}
-
-/**
- * Returns a random integer between min (inclusive) and max (inclusive).
- * The value is no lower than min (or the next integer greater than min
- * if min isn't an integer) and no greater than max (or the next integer
- * lower than max if max isn't an integer).
- * Using Math.round() will give you a non-uniform distribution!
- */
-function getRandomInt(min: number, max: number) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
 }

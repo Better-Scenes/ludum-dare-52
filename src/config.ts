@@ -18,6 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
       constraintIterations: 4,
       gravity: { y: 0 },
       debug: false,
+      setBounds: true,
     },
   },
 };
