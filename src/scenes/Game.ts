@@ -16,6 +16,7 @@ enum assets {
   BUSH = "bush",
   ROCK = "rock",
   PADDLESEGMENT = "paddleSegment",
+  PONTOON = "pontoon",
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
   PLAYER = "player",
@@ -105,6 +106,8 @@ export default class Demo extends Phaser.Scene {
   particleEmitUntil = 0;
   uiText: GameObjects.Text;
   sounds: { [key: string]: Phaser.Sound.BaseSound } = {};
+  rope: Phaser.GameObjects.Rope;
+
   constructor() {
     super("GameScene");
   }
@@ -125,6 +128,7 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.BUSH, "assets/bush.png");
     this.load.image(assets.ROCK, "assets/rock.png");
     this.load.image(assets.PADDLESEGMENT, "assets/paddle-segment.png");
+    this.load.image(assets.PONTOON, "assets/pontoon.png");
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
     this.load.image(assets.PLAYER, "assets/player.png");
@@ -276,6 +280,12 @@ export default class Demo extends Phaser.Scene {
     }
 
     this.pullBerriesFromEdge(delta);
+
+    const segPoints = this.segments.map((seg) => seg.item.body.position);
+    // this.rope = this.add.rope(0, 0, assets.CRANBERRY, 0, []);
+    this.rope.setPoints(segPoints);
+    this.rope.setDirty();
+    // console.log(this.rope);
   }
 
   endGame() {
@@ -442,6 +452,8 @@ export default class Demo extends Phaser.Scene {
         startY
       );
     }
+    const segPoints = this.segments.map((seg) => seg.item.body.position);
+    this.rope = this.add.rope(0, 0, assets.PONTOON, 0, segPoints);
   }
 
   createBerries(
