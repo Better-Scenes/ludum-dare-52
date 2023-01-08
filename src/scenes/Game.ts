@@ -282,10 +282,8 @@ export default class Demo extends Phaser.Scene {
     this.pullBerriesFromEdge(delta);
 
     const segPoints = this.segments.map((seg) => seg.item.body.position);
-    // this.rope = this.add.rope(0, 0, assets.CRANBERRY, 0, []);
     this.rope.setPoints(segPoints);
     this.rope.setDirty();
-    // console.log(this.rope);
   }
 
   endGame() {
