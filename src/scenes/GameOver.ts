@@ -16,9 +16,12 @@ export default class GameOver extends Phaser.Scene {
 
   preload() {
     // todo: no-op
+    this.load.image("water", "assets/water.png");
   }
 
   create(input: GameOverProps) {
+    const water = this.add.tileSprite(400, 300, 800, 600, "water");
+
     renderTextAt(
       this,
       "Game Over",

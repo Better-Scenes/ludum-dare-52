@@ -15,6 +15,7 @@ enum assets {
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
   PLAYER = "player",
+  WATER = "water",
 }
 
 enum berryData {
@@ -82,6 +83,7 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
     this.load.image(assets.PLAYER, "assets/player.png");
+    this.load.image(assets.WATER, "assets/water.png");
   }
 
   create() {
@@ -90,6 +92,7 @@ export default class Demo extends Phaser.Scene {
     this.cooldown = 0;
     this.berries = this.add.group();
 
+    const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createPlayer(140, 140);
     this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
     // this.createBushes(10);
