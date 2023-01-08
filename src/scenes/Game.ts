@@ -20,6 +20,9 @@ enum assets {
   WATER = "water",
   SPIDER = "spider",
   PARTICLE = "particle",
+  SOUND_COLLECT = "soundCollect",
+  SOUND_HURT = "soundHurt",
+  SOUND_RESCUE = "soundRescue",
 }
 
 enum berryData {
@@ -88,7 +91,7 @@ export default class Demo extends Phaser.Scene {
   cooldown = 0;
   particleEmitUntil = 0;
   uiText: GameObjects.Text;
-
+  sounds: { [key: string]: Phaser.Sound.BaseSound } = {};
   constructor() {
     super("GameScene");
   }
@@ -115,6 +118,10 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.WATER, "assets/water.png");
     this.load.image(assets.SPIDER, "assets/spider.png");
     this.load.image(assets.PARTICLE, "assets/particle.png");
+
+    this.load.audio(assets.SOUND_COLLECT, "assets/collect.wav");
+    this.load.audio(assets.SOUND_HURT, "assets/hurt.wav");
+    this.load.audio(assets.SOUND_RESCUE, "assets/rescue.wav");
   }
 
   create() {
@@ -123,6 +130,10 @@ export default class Demo extends Phaser.Scene {
     spidersRescused = 0;
     this.cooldown = 0;
     this.berries = this.add.group();
+
+    this.sounds[assets.SOUND_COLLECT] = this.sound.add(assets.SOUND_COLLECT);
+    this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
+    this.sounds[assets.SOUND_RESCUE] = this.sound.add(assets.SOUND_RESCUE);
 
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createPlayer(140, 140);
@@ -303,6 +314,8 @@ export default class Demo extends Phaser.Scene {
       shape: "circle",
       label: "spider",
     });
+    spider.setCollisionCategory(this.spiderCollisionCategory);
+
     spider.setOnCollide(
       (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
         const rock =
@@ -318,6 +331,7 @@ export default class Demo extends Phaser.Scene {
         spidersRescused++;
         timeRemaining += spiderRescueSeconds * 1000;
         spider.destroy();
+        this.sounds[assets.SOUND_RESCUE].play();
       }
     );
     setTimeout(() => {
@@ -342,16 +356,30 @@ export default class Demo extends Phaser.Scene {
       scale: { min: 1, max: 3 },
     });
 
-    collector.setCollidesWith(this.berryCollisionCategory);
+    collector.setCollidesWith([
+      this.berryCollisionCategory,
+      this.spiderCollisionCategory,
+    ]);
     collector.setOnCollide(
       (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
-        score +=
-          (collision.bodyA.gameObject as Phaser.Physics.Matter.Image).getData(
-            berryData.BERRY_VALUE
-          ) ?? 1;
-        this.collectorEmitter.start();
-        this.particleEmitUntil = new Date().getTime() + 100;
-        collision.bodyA.gameObject.destroy();
+        if (collision.bodyA.label == "berry") {
+          score +=
+            (collision.bodyA.gameObject as Phaser.Physics.Matter.Image).getData(
+              berryData.BERRY_VALUE
+            ) ?? 1;
+          this.collectorEmitter.start();
+          this.particleEmitUntil = new Date().getTime() + 100;
+          collision.bodyA.gameObject.destroy();
+          this.sounds[assets.SOUND_COLLECT].play();
+        } else if (collision.bodyA.label == "spider") {
+          if (score - 10 < 0) {
+            score = 0;
+          } else {
+            score -= 10;
+          }
+          collision.bodyA.gameObject.destroy();
+          this.sounds[assets.SOUND_HURT].play();
+        }
       }
     );
   }
@@ -426,6 +454,7 @@ export default class Demo extends Phaser.Scene {
         {
           mass: 0.1,
           frictionAir: 0.04,
+          label: "berry",
         }
       );
       berry.setScale(berryScale);
