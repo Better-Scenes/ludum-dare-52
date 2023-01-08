@@ -31,6 +31,12 @@ enum berryData {
   BERRY_VALUE = "berryValue",
 }
 
+enum spiderData {
+  START_HEALTH = "startHealth",
+  CURRENT_HEALTH = "health",
+  SPIDER_VALUE = "spiderValue",
+}
+
 // pontoon/segments/rope/snake
 const segmentLength = 20;
 const numberOfSegments = 10;
@@ -41,7 +47,7 @@ const jointDamping = 1.0;
 const paddleMass = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 1000000;
+const gameLengthInMs = 1 * 60 * 1000;
 
 // Player
 const playerMass = 2;
@@ -51,7 +57,7 @@ const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
 
 // Spiders
-const spiderSpawnProbability = 0.011;
+const spiderSpawnProbability = 0.002;
 const spiderLifetimeMilliseconds = 20000;
 const spiderRescueSeconds = 5;
 
@@ -84,6 +90,7 @@ type Segment = {
 export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
+  spiders: Phaser.GameObjects.Group;
   berryCollisionCategory: number;
   spiderCollisionCategory: number;
   segmentGroup: number;
@@ -134,6 +141,7 @@ export default class Demo extends Phaser.Scene {
     spidersRescued = 0;
     this.cooldown = 0;
     this.berries = this.add.group();
+    this.spiders = this.add.group();
 
     this.sounds[assets.SOUND_COLLECT] = this.sound.add(assets.SOUND_COLLECT);
     this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
@@ -177,7 +185,7 @@ export default class Demo extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    // this.reduceBerriesHealth(delta);
+    this.reduceSpiderHealth(delta);
 
     if (this.particleEmitUntil < new Date().getTime()) {
       this.collectorEmitter.stop();
@@ -318,6 +326,12 @@ export default class Demo extends Phaser.Scene {
       label: "spider",
     });
     spider.setCollisionCategory(this.spiderCollisionCategory);
+    spider.setDataEnabled();
+    spider.setData({
+      [spiderData.CURRENT_HEALTH]: spiderLifetimeMilliseconds,
+      [spiderData.START_HEALTH]: spiderLifetimeMilliseconds,
+      [spiderData.SPIDER_VALUE]: 10,
+    });
 
     spider.setOnCollide(
       (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
@@ -337,11 +351,7 @@ export default class Demo extends Phaser.Scene {
         this.sounds[assets.SOUND_RESCUE].play();
       }
     );
-    setTimeout(() => {
-      if (!collected) {
-        spider.destroy();
-      }
-    }, spiderLifetimeMilliseconds);
+    this.spiders.add(spider);
   }
 
   createBucket(x: number, y: number) {
@@ -499,21 +509,20 @@ export default class Demo extends Phaser.Scene {
     }
   }
 
-  reduceBerriesHealth(delta: number) {
-    this.berries.children.each((berry) => {
-      let health = berry.getData(berryData.CURRENT_HEALTH) as number;
-      const maxHealth = berry.getData(berryData.START_HEALTH) as number;
+  reduceSpiderHealth(delta: number) {
+    this.spiders.children.each((spider) => {
+      spider.getData(spiderData.CURRENT_HEALTH);
+      let health = spider.getData(berryData.CURRENT_HEALTH) as number;
+      const maxHealth = spider.getData(berryData.START_HEALTH) as number;
       health -= delta;
       if (health <= 0) {
-        berry.destroy();
+        spider.destroy();
+        //to-do play spider drown sound
       }
-      berry.setData(berryData.CURRENT_HEALTH, health);
+      spider.setData(berryData.CURRENT_HEALTH, health);
 
-      const healthPercent = 100 - (health / maxHealth) * 100;
-      const tint = new Phaser.Display.Color(255, 255, 255).darken(
-        healthPercent
-      );
-      (berry as Phaser.Physics.Matter.Image).setTint(tint.color);
+      const healthPercent = (health / maxHealth) * 100;
+      (spider as Phaser.Physics.Matter.Image).alpha = healthPercent / 100;
     });
   }
 
