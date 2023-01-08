@@ -52,6 +52,18 @@ const spiderSpawnProbability = 0.02;
 const spiderLifetimeMilliseconds = 10000;
 const spiderRescueSeconds = 5;
 
+// Berries
+const edgeRepulsionForce = 0.00005;
+const edgeRepulsionDistance = 10;
+const numberOfBerries = 500;
+
+// Collector
+const collectorPosition = new Phaser.Math.Vector2(
+  getScreenHalfWidth(),
+  config.scale?.height - 100
+);
+const collectorNoSpawnDistance = 100;
+
 //Game state
 let score = 0;
 let timeRemaining = gameLengthInMs;
@@ -114,11 +126,17 @@ export default class Demo extends Phaser.Scene {
 
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createPlayer(140, 140);
-    this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
+    this.createPontoon(collectorPosition.x, collectorPosition.y);
     // this.createBushes(10);
     this.createRocks(20);
-    this.createBerries(300, 10, 10, config.scale?.width, 400);
-    this.createBucket(getScreenHalfWidth(), config.scale?.height - 100);
+    this.createBerries(
+      numberOfBerries,
+      10,
+      10,
+      config.scale?.width,
+      config.scale?.height
+    );
+    this.createBucket(collectorPosition.x, collectorPosition.y);
     this.toggleGrabbing();
 
     this.keys = this.input.keyboard.addKeys({
@@ -232,6 +250,8 @@ export default class Demo extends Phaser.Scene {
     if (Math.random() < spiderSpawnProbability) {
       this.createSpider();
     }
+
+    this.pullBerriesFromEdge(delta);
   }
 
   endGame() {
@@ -385,9 +405,22 @@ export default class Demo extends Phaser.Scene {
   ) {
     for (let i = 0; i < count; i++) {
       const berryScale = getRandomFloat(0.5, 1);
-      const berry = this.matter.add.image(
+
+      const potentialSpawnPosition = new Phaser.Math.Vector2(
         getRandomInt(startX, startX + xrange),
-        getRandomInt(startY, startY + yrange),
+        getRandomInt(startY, startY + yrange)
+      );
+
+      if (
+        potentialSpawnPosition.distance(collectorPosition) <
+        collectorNoSpawnDistance
+      ) {
+        continue;
+      }
+
+      const berry = this.matter.add.image(
+        potentialSpawnPosition.x,
+        potentialSpawnPosition.y,
         assets.CRANBERRY,
         0,
         {
@@ -426,6 +459,42 @@ export default class Demo extends Phaser.Scene {
     });
   }
 
+  pullBerriesFromEdge(delta: number) {
+    this.berries.children.each((berry) => {
+      if (berry.body.position.x < edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: edgeRepulsionForce, y: 0 }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (berry.body.position.x > config.scale?.width - edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: -edgeRepulsionForce, y: 0 }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (berry.body.position.y < edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: 0, y: edgeRepulsionForce }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (
+        berry.body.position.y >
+        config.scale?.height - edgeRepulsionDistance
+      ) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: -0, y: -edgeRepulsionForce }).scale(
+            delta / 1000
+          )
+        );
+      }
+    });
+  }
+
   createBushes(count: number) {
     for (let i = 0; i < count; i++) {
       const bush = this.matter.add.image(
@@ -451,21 +520,20 @@ export default class Demo extends Phaser.Scene {
 
   createRocks(count: number) {
     for (let i = 0; i < count; i++) {
-      this.matter.add.image(
+      const rock = this.matter.add.image(
         getRandomInt(0, config.scale?.width ?? 500),
         getRandomInt(0, config.scale?.height ?? 500),
         assets.ROCK,
         0,
         {
           label: "rock",
-          mass: 0.1,
           scale: { x: 1, y: 1 },
-          frictionAir: 1,
-          // isSensor: true,
           isStatic: true,
           shape: "circle",
         }
       );
+      rock.setScale(getRandomFloat(0.5, 1.2));
+      rock.setAngle(getRandomInt(0, 360));
     }
   }
 }
