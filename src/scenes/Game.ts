@@ -2,6 +2,7 @@ import Phaser, { GameObjects } from "phaser";
 
 import config from "../config";
 import {
+  getRandomFloat,
   getRandomInt,
   getScreenHalfHeight,
   getScreenHalfWidth,
@@ -98,7 +99,7 @@ export default class Demo extends Phaser.Scene {
     this.createPontoon(getScreenHalfWidth(), config.scale?.height - 100);
     // this.createBushes(10);
     this.createRocks(20);
-    this.createBerries(300, 10, 10, config.scale?.width, 400);
+    this.createBerries(500, 10, 10, config.scale?.width, 400);
     this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
     this.toggleGrabbing();
 
@@ -314,13 +315,19 @@ export default class Demo extends Phaser.Scene {
     yrange = 10
   ) {
     for (let i = 0; i < count; i++) {
+      const berryScale = getRandomFloat(0.5, 1);
+      console.log(berryScale);
       const berry = this.matter.add.image(
         getRandomInt(startX, startX + xrange),
         getRandomInt(startY, startY + yrange),
         assets.CRANBERRY,
         0,
-        { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.04 }
+        {
+          mass: 0.1,
+          frictionAir: 0.04,
+        }
       );
+      berry.setScale(berryScale);
       berry.setCollisionCategory(this.berryCollisionCategory);
       berry.setDataEnabled();
       const randomHealth = getRandomInt(10000, 20000);
