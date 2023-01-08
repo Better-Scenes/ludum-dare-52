@@ -59,6 +59,7 @@ const spiderRescueSeconds = 5;
 const edgeRepulsionForce = 0.00005;
 const edgeRepulsionDistance = 10;
 const numberOfBerries = 500;
+const rareBerryChance = 0.01;
 
 // Collector
 const collectorPosition = new Phaser.Math.Vector2(
@@ -466,6 +467,27 @@ export default class Demo extends Phaser.Scene {
         [berryData.CURRENT_HEALTH]: randomHealth,
         [berryData.BERRY_VALUE]: 1,
       });
+
+      if (Math.random() < rareBerryChance) {
+        berry.setData(berryData.BERRY_VALUE, 10);
+        const tint = new Phaser.Display.Color(200, 200, 0);
+
+        this.tweens.addCounter({
+          from: 255,
+          to: 0,
+          duration: 500,
+          yoyo: true,
+          loop: -1,
+          onUpdate: function (tween) {
+            const value = Math.floor(tween.getValue());
+
+            berry.setTintFill(0xff00ff, 0xff0000, 0x00ff00, 0x0000ff);
+          },
+        });
+      } else {
+        const tint = new Phaser.Display.Color(255, 255, 255);
+        berry.setTint(tint.color);
+      }
       this.berries.add(berry);
     }
   }
