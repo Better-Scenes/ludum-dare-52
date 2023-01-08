@@ -8,7 +8,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "lint": "npx eslint src\\**\\*.ts --fix",
-    "deploy": "npm run build && aws s3 cp ./dist s3://ldjam52/ --recursive"
+    "deploy": "git subtree push --prefix dist origin gh-pages"
   },
   "repository": {
     "type": "git",
