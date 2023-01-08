@@ -1,4 +1,13 @@
 import Phaser from "phaser";
+import {
+  renderTextAt,
+  getScreenHalfWidth,
+  getScreenHalfHeight,
+} from "../utils";
+
+interface GameOverProps {
+  score: number;
+}
 
 export default class GameOver extends Phaser.Scene {
   constructor() {
@@ -9,13 +18,22 @@ export default class GameOver extends Phaser.Scene {
     // todo: no-op
   }
 
-  create() {
-    this.add
-      .text(0, 0, "GAME OVER", {
-        fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
-      })
+  create(input: GameOverProps) {
+    renderTextAt(
+      this,
+      "GAME OVER",
+      getScreenHalfWidth(),
+      getScreenHalfHeight() - 25
+    )
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => this.returnMenu());
+
+    renderTextAt(
+      this,
+      `You scored: ${input.score}`,
+      getScreenHalfWidth(),
+      getScreenHalfHeight() + 25
+    );
   }
 
   update(time: number, delta: number): void {

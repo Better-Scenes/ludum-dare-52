@@ -1,6 +1,7 @@
 import Phaser, { GameObjects } from "phaser";
 
 import config from "../config";
+import { getScreenHalfHeight, getScreenHalfWidth } from "../utils";
 
 enum assets {
   CRANBERRY = "cranberry",
@@ -27,7 +28,7 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 10000;
+const gameLengthInMs = 400;
 
 // Player
 const playerMass = 2;
@@ -86,7 +87,7 @@ export default class Demo extends Phaser.Scene {
     this.berries = this.add.group();
 
     this.createPlayer(140, 140);
-    this.createPontoon(config.scale?.width / 2, config.scale?.height - 100);
+    this.createPontoon(getScreenHalfWidth(), getScreenHalfHeight() - 100);
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(300, 10, 10, config.scale?.width, 500);
@@ -198,8 +199,7 @@ export default class Demo extends Phaser.Scene {
 
   endGame() {
     //go to game over scene and display score
-    // alert(`game over you suck, but you did score ${score}`);
-    this.scene.start("GameOver");
+    this.scene.start("GameOver", { score: score });
   }
 
   createPlayer(x: number, y: number) {
