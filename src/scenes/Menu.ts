@@ -6,6 +6,7 @@ import {
   getScreenHalfWidth,
   getScreenHalfHeight,
   getRandomInt,
+  textStyle,
 } from "../utils";
 
 export default class Menu extends Phaser.Scene {
@@ -38,14 +39,33 @@ export default class Menu extends Phaser.Scene {
       this,
       "A game of collecting cranberries",
       getScreenHalfWidth(),
-      getScreenHalfHeight() + 25
+      getScreenHalfHeight() - 20
+    );
+
+    this.add.text(
+      250,
+      300,
+      `Controls:
+    WASD movement
+    Space to extend the boom
+    Shift to retract`,
+      textStyle
+    );
+
+    this.add.text(
+      250,
+      380,
+      `Goal:
+      Collect the cranberries in the collector
+      Save spiders to increase time limit`,
+      textStyle
     );
 
     renderTextAt(
       this,
       "Start Game",
       getScreenHalfWidth(),
-      getScreenHalfHeight() + 50
+      getScreenHalfHeight() + 150
     )
       .setInteractive({ useHandCursor: true })
       .on("pointerdown", () => this.newGame());
