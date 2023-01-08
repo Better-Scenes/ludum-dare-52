@@ -10,6 +10,7 @@ import {
   getScreenSize,
   getTintForVertexColor,
 } from "../utils";
+import WaterPipeline from "../pipeline";
 
 enum assets {
   CRANBERRY = "cranberry",
@@ -107,6 +108,7 @@ export default class Demo extends Phaser.Scene {
   uiText: GameObjects.Text;
   sounds: { [key: string]: Phaser.Sound.BaseSound } = {};
   rope: Phaser.GameObjects.Rope;
+  shader: Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
 
   constructor() {
     super("GameScene");
@@ -153,7 +155,15 @@ export default class Demo extends Phaser.Scene {
     this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
     this.sounds[assets.SOUND_RESCUE] = this.sound.add(assets.SOUND_RESCUE);
 
-    const water = this.add.tileSprite(400, 300, 800, 600, "water");
+    this.shader = this.renderer.pipelines.add(
+      "Water",
+      new WaterPipeline(this.game)
+    );
+    this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
+
+    const water = this.add
+      .tileSprite(400, 300, config.scale?.width, 600, "water")
+      .setPipeline("Water");
     this.createPlayer(140, 140);
     this.createPontoon(collectorPosition.x, collectorPosition.y);
     this.createRocks(numberOfRocks);
@@ -191,6 +201,8 @@ export default class Demo extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    this.shader.set1f("uTime", time * 0.005);
+
     this.reduceSpiderHealth(delta);
 
     if (this.particleEmitUntil < new Date().getTime()) {
