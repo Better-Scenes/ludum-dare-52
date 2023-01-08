@@ -57,9 +57,12 @@ const spiderRescueSeconds = 5;
 
 // Berries
 const edgeRepulsionForce = 0.00005;
-const edgeRepulsionDistance = 10;
-const numberOfBerries = 500;
+const edgeRepulsionDistance = 20;
+const numberOfBerries = 1000;
 const rareBerryChance = 0.01;
+
+// Rocks
+const numberOfRocks = 20;
 
 // Collector
 const collectorPosition = new Phaser.Math.Vector2(
@@ -139,8 +142,7 @@ export default class Demo extends Phaser.Scene {
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createPlayer(140, 140);
     this.createPontoon(collectorPosition.x, collectorPosition.y);
-    // this.createBushes(10);
-    this.createRocks(20);
+    this.createRocks(numberOfRocks);
     this.createBerries(
       numberOfBerries,
       10,
@@ -546,34 +548,24 @@ export default class Demo extends Phaser.Scene {
     });
   }
 
-  createBushes(count: number) {
-    for (let i = 0; i < count; i++) {
-      const bush = this.matter.add.image(
-        getRandomInt(0, config.scale?.width ?? 500),
-        getRandomInt(0, config.scale?.height ?? 500),
-        assets.BUSH,
-        0,
-        {
-          mass: 0.1,
-          scale: { x: 1, y: 1 },
-          frictionAir: 1,
-          // isSensor: true,
-          isStatic: true,
-        }
-      );
-      bush.setInteractive();
-      bush.on("pointerdown", () => {
-        this.createBerries(getRandomInt(5, 10), bush.x, bush.y);
-        bush.destroy();
-      });
-    }
-  }
-
   createRocks(count: number) {
     for (let i = 0; i < count; i++) {
-      const rock = this.matter.add.image(
+      const potentialSpawnPosition = new Phaser.Math.Vector2(
         getRandomInt(0, config.scale?.width ?? 500),
-        getRandomInt(0, config.scale?.height ?? 500),
+        getRandomInt(0, config.scale?.height ?? 500)
+      );
+
+      if (
+        potentialSpawnPosition.distance(collectorPosition) <
+        collectorNoSpawnDistance
+      ) {
+        i--;
+        continue;
+      }
+
+      const rock = this.matter.add.image(
+        potentialSpawnPosition.x,
+        potentialSpawnPosition.y,
         assets.ROCK,
         0,
         {
