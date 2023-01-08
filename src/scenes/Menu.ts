@@ -15,9 +15,11 @@ export default class Menu extends Phaser.Scene {
 
   preload() {
     this.load.image("cranberry", "assets/cranberry.png");
+    this.load.image("water", "assets/water.png");
   }
 
   create(input: object) {
+    const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
 
     const mouseCircle = this.matter.add.circle(500, 500, 25, { mass: 0.1 });
