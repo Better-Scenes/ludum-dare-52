@@ -49,6 +49,10 @@ const spiderSpawnProbability = 0.02;
 const spiderLifetimeMilliseconds = 10000;
 const spiderRescueSeconds = 5;
 
+// Berries
+const edgeRepulsionForce = 0.00005;
+const edgeRepulsionDistance = 10;
+
 //Game state
 let score = 0;
 let timeRemaining = gameLengthInMs;
@@ -224,6 +228,8 @@ export default class Demo extends Phaser.Scene {
     if (Math.random() < spiderSpawnProbability) {
       this.createSpider();
     }
+
+    this.pullBerriesFromEdge(delta);
   }
 
   endGame() {
@@ -411,6 +417,42 @@ export default class Demo extends Phaser.Scene {
         healthPercent
       );
       (berry as Phaser.Physics.Matter.Image).setTint(tint.color);
+    });
+  }
+
+  pullBerriesFromEdge(delta: number) {
+    this.berries.children.each((berry) => {
+      if (berry.body.position.x < edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: edgeRepulsionForce, y: 0 }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (berry.body.position.x > config.scale?.width - edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: -edgeRepulsionForce, y: 0 }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (berry.body.position.y < edgeRepulsionDistance) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: 0, y: edgeRepulsionForce }).scale(
+            delta / 1000
+          )
+        );
+      }
+      if (
+        berry.body.position.y >
+        config.scale?.height - edgeRepulsionDistance
+      ) {
+        berry.body.gameObject.applyForce(
+          new Phaser.Math.Vector2({ x: -0, y: -edgeRepulsionForce }).scale(
+            delta / 1000
+          )
+        );
+      }
     });
   }
 
