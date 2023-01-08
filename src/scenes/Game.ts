@@ -5,6 +5,7 @@ import {
   getRandomInt,
   getScreenHalfHeight,
   getScreenHalfWidth,
+  getScreenSize,
 } from "../utils";
 
 enum assets {
@@ -15,6 +16,7 @@ enum assets {
   PADDLEEND = "paddleEnd",
   COLLECTOR = "collector",
   PLAYER = "player",
+  SPIDER = "spider",
 }
 
 enum berryData {
@@ -32,16 +34,21 @@ const jointStiffness = 0.4;
 const jointDamping = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 10000;
+const gameLengthInMs = 1000000;
 
 // Player
 const playerMass = 2;
 const playerMoveForce = 0.02;
 const playerSpoolForceMultiplier = 0.6;
 
+// Spiders
+const spiderSpawnProbability = 0.02;
+const spiderLifetimeMilliseconds = 10000;
+
 //Game state
 let score = 0;
 let timeRemaining = gameLengthInMs;
+let spidersRescused = 0;
 
 type Segment = {
   joint?: MatterJS.ConstraintType;
@@ -52,6 +59,7 @@ export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
   berryCollisionCategory: number;
+  spiderCollisionCategory: number;
   segmentGroup: number;
   player: Phaser.Physics.Matter.Image;
   keys: { [key: string]: Phaser.Input.Keyboard.Key };
@@ -70,6 +78,7 @@ export default class Demo extends Phaser.Scene {
     if (!this.initialized) {
       this.initialized = true;
       this.berryCollisionCategory = this.matter.world.nextCategory();
+      this.spiderCollisionCategory = this.matter.world.nextCategory();
       this.segmentGroup = this.matter.world.nextGroup(true);
     }
   }
@@ -82,11 +91,13 @@ export default class Demo extends Phaser.Scene {
     this.load.image(assets.PADDLEEND, "assets/float-end.png");
     this.load.image(assets.COLLECTOR, "assets/collector.png");
     this.load.image(assets.PLAYER, "assets/player.png");
+    this.load.image(assets.SPIDER, "assets/spider.png");
   }
 
   create() {
     timeRemaining = gameLengthInMs;
     score = 0;
+    spidersRescused = 0;
     this.cooldown = 0;
     this.berries = this.add.group();
 
@@ -95,7 +106,7 @@ export default class Demo extends Phaser.Scene {
     // this.createBushes(10);
     this.createRocks(20);
     this.createBerries(300, 10, 10, config.scale?.width, 500);
-    this.createBucket(config.scale?.width / 2, config.scale?.height - 100);
+    this.createBucket(getScreenHalfWidth(), config.scale?.height - 100);
     this.toggleGrabbing();
 
     this.keys = this.input.keyboard.addKeys({
@@ -113,10 +124,6 @@ export default class Demo extends Phaser.Scene {
       font: "16px Courier",
       fill: "#00ff00",
     });
-    this.uiText.setText([
-      "Score: " + score.toString(),
-      "Time: " + timeRemaining.toString(),
-    ]);
 
     this.input.keyboard.on("keydown", (key) => {
       if (key.key == "Escape") {
@@ -136,6 +143,7 @@ export default class Demo extends Phaser.Scene {
     this.uiText.setText([
       "Score: " + score.toString(),
       "Time: " + parseInt(timeRemaining / 1000).toString(),
+      "Spiders rescued: " + spidersRescused.toString(),
     ]);
 
     const moveForce = this.keys.spool.isDown
@@ -199,6 +207,10 @@ export default class Demo extends Phaser.Scene {
         );
       }
     }
+
+    if (Math.random() < spiderSpawnProbability) {
+      this.createSpider();
+    }
   }
 
   endGame() {
@@ -226,6 +238,40 @@ export default class Demo extends Phaser.Scene {
         item: endSegment,
       };
     }
+  }
+
+  createSpider() {
+    const size = getScreenSize();
+    const xpos = Math.random() * size.x;
+    const ypos = Math.random() * size.y;
+    let collected = false;
+    const spider = this.matter.add.image(xpos, ypos, assets.SPIDER, 0, {
+      mass: 0.1,
+      frictionAir: 0.5,
+      shape: "circle",
+      label: "spider",
+    });
+    spider.setOnCollide(
+      (collision: Phaser.Types.Physics.Matter.MatterCollisionData) => {
+        const rock =
+          collision.bodyA.label === "rock"
+            ? collision.bodyA
+            : collision.bodyB.label === "rock"
+            ? collision.bodyB
+            : null;
+        if (!rock) {
+          return;
+        }
+        collected = true;
+        spidersRescused++;
+        spider.destroy();
+      }
+    );
+    setTimeout(() => {
+      if (!collected) {
+        spider.destroy();
+      }
+    }, spiderLifetimeMilliseconds);
   }
 
   createBucket(x: number, y: number) {
@@ -356,12 +402,13 @@ export default class Demo extends Phaser.Scene {
 
   createRocks(count: number) {
     for (let i = 0; i < count; i++) {
-      const rock = this.matter.add.image(
+      this.matter.add.image(
         getRandomInt(0, config.scale?.width ?? 500),
         getRandomInt(0, config.scale?.height ?? 500),
         assets.ROCK,
         0,
         {
+          label: "rock",
           mass: 0.1,
           scale: { x: 1, y: 1 },
           frictionAir: 1,

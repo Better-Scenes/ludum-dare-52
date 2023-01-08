@@ -21,6 +21,10 @@ export function getScreenHalfHeight(): number {
   return config.scale.height * 0.5;
 }
 
+export function getScreenSize(): { x: number; y: number } {
+  return { x: config.scale.width, y: config.scale.height };
+}
+
 /**
  * Returns a random integer between min (inclusive) and max (inclusive).
  * The value is no lower than min (or the next integer greater than min
