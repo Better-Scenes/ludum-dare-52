@@ -9,6 +9,7 @@ export function renderTextAt(
   return scene.add
     .text(x, y, text, {
       fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
+      color: "black",
     })
     .setOrigin(0.5, 0.5);
 }

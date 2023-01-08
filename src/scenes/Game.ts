@@ -114,7 +114,7 @@ export default class Demo extends Phaser.Scene {
 
     this.uiText = this.add.text(20, 20, "", {
       font: "16px Courier",
-      fill: "#00ff00",
+      fill: "black",
     });
     this.uiText.setText([
       "Score: " + score.toString(),
