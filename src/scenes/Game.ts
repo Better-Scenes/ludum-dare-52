@@ -520,7 +520,7 @@ export default class Demo extends Phaser.Scene {
           shape: "circle",
         }
       );
-      rock.setScale(getRandomFloat(0.5, 1.2));
+      rock.setScale(getRandomFloat(1, 1.2));
       rock.setAngle(getRandomInt(0, 360));
     }
   }
