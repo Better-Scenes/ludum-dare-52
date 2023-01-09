@@ -92,16 +92,22 @@ type Segment = {
   item: Phaser.Physics.Matter.Image;
 };
 
+type Ripple = {
+  x: number;
+  y: number;
+  time: number;
+};
+
 export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
   spiders: Phaser.GameObjects.Group;
-  berryCollisionCategory: number;
-  spiderCollisionCategory: number;
-  segmentGroup: number;
+  berryCollisionCategory = 0;
+  spiderCollisionCategory = 0;
+  segmentGroup = 0;
   player: Phaser.Physics.Matter.Image;
   collectorEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
-  keys: { [key: string]: Phaser.Input.Keyboard.Key };
+  keys: { [key: string]: Phaser.Input.Keyboard.Key } = {};
   grabbing?: Segment;
   segments: Segment[] = [];
   cooldown = 0;
@@ -111,6 +117,7 @@ export default class Demo extends Phaser.Scene {
   rope: Phaser.GameObjects.Rope;
   shader: Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
   startTime: number = Date.now();
+  ripples: Ripple[] = [];
 
   constructor() {
     super("GameScene");
@@ -168,7 +175,7 @@ export default class Demo extends Phaser.Scene {
     );
     this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
 
-    const water = this.add
+    this.add
       .tileSprite(400, 300, config.scale?.width, 600, "water")
       .setPipeline("Water");
     this.createPlayer(140, 140);
@@ -209,8 +216,17 @@ export default class Demo extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     this.shader.set1f("uTime", Date.now() - this.startTime);
-    this.shader.set1i("uNumRipples", 2);
-    this.shader.set3fv("uRipples", [400, 300, 0, 300, 200, 500]);
+    this.shader.set1i("uNumRipples", this.ripples.length);
+    this.shader.set3fv(
+      "uRipples",
+      this.ripples.reduce((arr: number[], ripple: Ripple) => {
+        return arr.concat([ripple.x, ripple.y, ripple.time]);
+      }, [])
+    );
+
+    if (Math.random() < 0.05) {
+      this.addRipple(Math.random() * 800, Math.random() * 600);
+    }
 
     this.reduceSpiderHealth(delta);
 
@@ -337,6 +353,15 @@ export default class Demo extends Phaser.Scene {
         item: endSegment,
       };
     }
+  }
+
+  addRipple(x: number, y: number) {
+    const currTime = Date.now() - this.startTime;
+    const cutoffTime = currTime - 1000 * 10;
+    this.ripples.unshift({ x, y, time: currTime });
+    this.ripples = this.ripples
+      .slice(0, 64)
+      .filter((ripple) => ripple.time > cutoffTime);
   }
 
   createSpider() {

@@ -33,7 +33,6 @@ float GetRippleAmplitude(vec3 ripple) {
 
 void main() {
 
-    //float amp = GetRippleAmplitude(vec3(uResolution * 0.5, uStartTime));
     float amp = 0.0;
     for(int i = 0; i < NUM_RIPPLES; i++) {
         if(i >= uNumRipples) { // loop has to be unrollable so cannot do "for(int i = 0; i < uNumRipples; i++) {"
