@@ -60,6 +60,7 @@ const playerMoveForce = 0.02;
 const playerSpoolForceMultiplier = 0.7;
 const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
+const playerRippleCooldownMilliseconds = 150;
 
 // Spiders
 const spiderSpawnProbability = 0.002;
@@ -96,6 +97,7 @@ type Ripple = {
   x: number;
   y: number;
   time: number;
+  radius: number;
 };
 
 export default class Demo extends Phaser.Scene {
@@ -118,6 +120,7 @@ export default class Demo extends Phaser.Scene {
   shader: Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
   startTime: number = Date.now();
   ripples: Ripple[] = [];
+  playerRippleCooldown = 0;
 
   constructor() {
     super("GameScene");
@@ -217,16 +220,25 @@ export default class Demo extends Phaser.Scene {
   update(time: number, delta: number): void {
     this.shader.set1f("uTime", Date.now() - this.startTime);
     this.shader.set1i("uNumRipples", this.ripples.length);
-    this.shader.set3fv(
+    this.shader.set4fv(
       "uRipples",
       this.ripples.reduce((arr: number[], ripple: Ripple) => {
-        return arr.concat([ripple.x, ripple.y, ripple.time]);
+        return arr.concat([
+          ripple.x,
+          config.scale?.height - ripple.y,
+          ripple.radius,
+          ripple.time,
+        ]);
       }, [])
     );
 
-    if (Math.random() < 0.05) {
-      this.addRipple(Math.random() * 800, Math.random() * 600);
-    }
+    // if (Math.random() < 0.05) {
+    //   this.addRipple(
+    //     Math.random() * 800,
+    //     Math.random() * 600,
+    //     50 + Math.random() * 100
+    //   );
+    // }
 
     this.reduceSpiderHealth(delta);
 
@@ -264,6 +276,18 @@ export default class Demo extends Phaser.Scene {
     } else if (this.keys.up.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: -moveForce }));
     }
+
+    const playerSpeed = new Phaser.Math.Vector2(
+      this.player.body.velocity
+    ).length();
+    if (
+      playerSpeed > 0.1 &&
+      this.playerRippleCooldown < Date.now() - playerRippleCooldownMilliseconds
+    ) {
+      this.addRipple(this.player.x, this.player.y, 50);
+      this.playerRippleCooldown = Date.now();
+    }
+
     if (
       this.keys.retract.isDown &&
       this.segments.length > 1 &&
@@ -355,10 +379,10 @@ export default class Demo extends Phaser.Scene {
     }
   }
 
-  addRipple(x: number, y: number) {
+  addRipple(x: number, y: number, radius: number) {
     const currTime = Date.now() - this.startTime;
     const cutoffTime = currTime - 1000 * 10;
-    this.ripples.unshift({ x, y, time: currTime });
+    this.ripples.unshift({ x, y, radius, time: currTime });
     this.ripples = this.ripples
       .slice(0, 64)
       .filter((ripple) => ripple.time > cutoffTime);

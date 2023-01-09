@@ -6,22 +6,22 @@ uniform sampler2D uMainSampler;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform int uNumRipples;
-uniform vec3 uRipples[NUM_RIPPLES];
+uniform vec4 uRipples[NUM_RIPPLES];
 
 varying vec2 outTexCoord;
 varying vec4 outTint;
 
-float GetRippleAmplitude(vec3 ripple) {
+float GetRippleAmplitude(vec4 ripple) {
 
     vec2 ripple_pos = ripple.xy;
-    const float decay_dist = 150.0;
+    float decay_dist = ripple.z;
     const float freq_mult_dist = 0.4;
     const float phase_mult_time = 0.03;
 
     vec2 delta = gl_FragCoord.xy - ripple_pos;
     float dist = length(delta);
 
-    float time_elapsed = uTime - ripple.z;
+    float time_elapsed = uTime - ripple.w;
 
     const float env_size = 25.0;
     float env_pos = time_elapsed * phase_mult_time / freq_mult_dist;
