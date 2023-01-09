@@ -46,7 +46,7 @@ enum spiderData {
 }
 
 // game
-const gameLengthInMs = 1 * 60 * 1000;
+const gameLengthInMs = 90 * 1000;
 const maxRipples = 64;
 
 // pontoon/segments/rope/snake
@@ -137,17 +137,6 @@ export default class Demo extends Phaser.Scene {
     super("GameScene");
   }
 
-  init() {
-    this.segments = [];
-
-    if (!this.initialized) {
-      this.initialized = true;
-      this.berryCollisionCategory = this.matter.world.nextCategory();
-      this.spiderCollisionCategory = this.matter.world.nextCategory();
-      this.segmentGroup = this.matter.world.nextGroup(true);
-    }
-  }
-
   preload() {
     this.load.scenePlugin({
       key: "rexuiplugin",
@@ -175,6 +164,26 @@ export default class Demo extends Phaser.Scene {
   }
 
   create() {
+    if (!this.initialized) {
+      this.initialized = true;
+      this.berryCollisionCategory = this.matter.world.nextCategory();
+      this.spiderCollisionCategory = this.matter.world.nextCategory();
+      this.segmentGroup = this.matter.world.nextGroup(true);
+
+      this.shader = this.renderer.pipelines.add(
+        "Water",
+        new WaterPipeline(
+          this.game,
+          this.cache.shader.get(assets.WATER_SHADER).fragmentSrc
+        )
+      );
+      this.shader.set2f(
+        "uResolution",
+        config.scale?.width,
+        config.scale?.height
+      );
+    }
+
     timeRemaining = gameLengthInMs;
     score = 0;
     spidersRescued = 0;
@@ -182,19 +191,12 @@ export default class Demo extends Phaser.Scene {
     this.berries = this.add.group();
     this.spiders = this.add.group();
     this.rocks = this.add.group();
+    this.ripples = [];
+    this.segments = [];
 
     this.sounds[assets.SOUND_COLLECT] = this.sound.add(assets.SOUND_COLLECT);
     this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
     this.sounds[assets.SOUND_RESCUE] = this.sound.add(assets.SOUND_RESCUE);
-
-    this.shader = this.renderer.pipelines.add(
-      "Water",
-      new WaterPipeline(
-        this.game,
-        this.cache.shader.get(assets.WATER_SHADER).fragmentSrc
-      )
-    );
-    this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
 
     this.add
       .tileSprite(400, 300, config.scale?.width, 600, "water")
@@ -362,7 +364,7 @@ export default class Demo extends Phaser.Scene {
 
     if (
       this.keys.retract.isDown &&
-      this.segments.length > 1 &&
+      this.segments.length > 3 &&
       this.cooldown + paddleCooldownMilliseconds <= Date.now()
     ) {
       this.cooldown = Date.now();
