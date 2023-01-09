@@ -10,6 +10,7 @@ import {
   getScreenSize,
   getTintForVertexColor,
 } from "../utils";
+import WaterPipeline from "../pipeline";
 
 import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 
@@ -29,6 +30,7 @@ enum assets {
   SOUND_HURT = "soundHurt",
   SOUND_RESCUE = "soundRescue",
   SOUNDTRACK = "soundtrack",
+  WATER_SHADER = "waterShader",
 }
 
 enum berryData {
@@ -43,6 +45,10 @@ enum spiderData {
   SPIDER_VALUE = "spiderValue",
 }
 
+// game
+const gameLengthInMs = 1 * 60 * 1000;
+const maxRipples = 64;
+
 // pontoon/segments/rope/snake
 const segmentLength = 20;
 const numberOfSegments = 10;
@@ -53,7 +59,7 @@ const jointDamping = 1.0;
 const paddleMass = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 1 * 60 * 1000;
+const paddleRippleProbability = 0.04;
 
 // Player
 const playerMass = 2;
@@ -61,11 +67,14 @@ const playerMoveForce = 0.02;
 const playerSpoolForceMultiplier = 0.7;
 const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
+const playerRippleCooldownMilliseconds = 50;
+const playerRippleRadius = 100;
 
 // Spiders
 const spiderSpawnProbability = 0.002;
 const spiderLifetimeMilliseconds = 20000;
 const spiderRescueSeconds = 5;
+const spiderRippleProbability = 0.02;
 
 // Berries
 const edgeRepulsionForce = 0.00005;
@@ -75,6 +84,7 @@ const rareBerryChance = 0.01;
 
 // Rocks
 const numberOfRocks = 20;
+const rockRippleProbability = 0.0; // 0.01
 
 // Collector
 const collectorPosition = new Phaser.Math.Vector2(
@@ -93,16 +103,24 @@ type Segment = {
   item: Phaser.Physics.Matter.Image;
 };
 
+type Ripple = {
+  x: number;
+  y: number;
+  time: number;
+  radius: number;
+};
+
 export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
   spiders: Phaser.GameObjects.Group;
-  berryCollisionCategory: number;
-  spiderCollisionCategory: number;
-  segmentGroup: number;
+  rocks: Phaser.GameObjects.Group;
+  berryCollisionCategory = 0;
+  spiderCollisionCategory = 0;
+  segmentGroup = 0;
   player: Phaser.Physics.Matter.Image;
   collectorEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
-  keys: { [key: string]: Phaser.Input.Keyboard.Key };
+  keys: { [key: string]: Phaser.Input.Keyboard.Key } = {};
   grabbing?: Segment;
   segments: Segment[] = [];
   cooldown = 0;
@@ -110,6 +128,10 @@ export default class Demo extends Phaser.Scene {
   uiText: GameObjects.Text;
   sounds: { [key: string]: Phaser.Sound.BaseSound } = {};
   rope: Phaser.GameObjects.Rope;
+  shader: Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
+  startTime: number = Date.now();
+  ripples: Ripple[] = [];
+  playerRippleCooldown = 0;
 
   constructor() {
     super("GameScene");
@@ -148,6 +170,8 @@ export default class Demo extends Phaser.Scene {
     this.load.audio(assets.SOUND_COLLECT, "assets/collect.wav");
     this.load.audio(assets.SOUND_HURT, "assets/hurt.wav");
     this.load.audio(assets.SOUND_RESCUE, "assets/rescue.wav");
+
+    this.load.glsl(assets.WATER_SHADER, "assets/shaders/water.frag");
   }
 
   create() {
@@ -157,12 +181,24 @@ export default class Demo extends Phaser.Scene {
     this.cooldown = 0;
     this.berries = this.add.group();
     this.spiders = this.add.group();
+    this.rocks = this.add.group();
 
     this.sounds[assets.SOUND_COLLECT] = this.sound.add(assets.SOUND_COLLECT);
     this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
     this.sounds[assets.SOUND_RESCUE] = this.sound.add(assets.SOUND_RESCUE);
 
-    const water = this.add.tileSprite(400, 300, 800, 600, "water");
+    this.shader = this.renderer.pipelines.add(
+      "Water",
+      new WaterPipeline(
+        this.game,
+        this.cache.shader.get(assets.WATER_SHADER).fragmentSrc
+      )
+    );
+    this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
+
+    this.add
+      .tileSprite(400, 300, config.scale?.width, 600, "water")
+      .setPipeline("Water");
     this.createPlayer(140, 140);
     this.createPontoon(collectorPosition.x, collectorPosition.y);
     this.createRocks(numberOfRocks);
@@ -226,6 +262,28 @@ export default class Demo extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    this.shader.set1f("uTime", Date.now() - this.startTime);
+    this.shader.set1i("uNumRipples", this.ripples.length);
+    this.shader.set4fv(
+      "uRipples",
+      this.ripples.reduce((arr: number[], ripple: Ripple) => {
+        return arr.concat([
+          ripple.x,
+          config.scale?.height - ripple.y,
+          ripple.radius,
+          ripple.time,
+        ]);
+      }, [])
+    );
+
+    // if (Math.random() < 0.05) {
+    //   this.addRipple(
+    //     Math.random() * 800,
+    //     Math.random() * 600,
+    //     50 + Math.random() * 100
+    //   );
+    // }
+
     this.reduceSpiderHealth(delta);
 
     if (this.particleEmitUntil < new Date().getTime()) {
@@ -262,6 +320,46 @@ export default class Demo extends Phaser.Scene {
     } else if (this.keys.up.isDown) {
       this.player.applyForce(new Phaser.Math.Vector2({ x: 0, y: -moveForce }));
     }
+
+    const playerSpeed = new Phaser.Math.Vector2(
+      this.player.body.velocity
+    ).length();
+    if (
+      playerSpeed > 0.1 &&
+      this.playerRippleCooldown < Date.now() - playerRippleCooldownMilliseconds
+    ) {
+      this.addRipple(this.player.x, this.player.y, playerRippleRadius);
+      this.playerRippleCooldown = Date.now();
+    }
+
+    this.segments.forEach((segment) => {
+      if (Math.random() > paddleRippleProbability) {
+        return;
+      }
+      const body = segment.item.body;
+      const paddleSpeed = new Phaser.Math.Vector2(body.velocity).length();
+      if (paddleSpeed < 0.1) {
+        return;
+      }
+      this.addRipple(body.position.x, body.position.y, 30 + Math.random() * 30);
+    });
+
+    this.spiders.children.each((spider) => {
+      if (Math.random() < spiderRippleProbability) {
+        this.addRipple(
+          spider.body.position.x,
+          spider.body.position.y,
+          20 + Math.random() * 30
+        );
+      }
+    });
+
+    this.rocks.children.each((rock) => {
+      if (Math.random() < rockRippleProbability) {
+        this.addRipple(rock.body.position.x, rock.body.position.y, 80);
+      }
+    });
+
     if (
       this.keys.retract.isDown &&
       this.segments.length > 1 &&
@@ -351,6 +449,15 @@ export default class Demo extends Phaser.Scene {
         item: endSegment,
       };
     }
+  }
+
+  addRipple(x: number, y: number, radius: number) {
+    const currTime = Date.now() - this.startTime;
+    const cutoffTime = currTime - 1000 * 10;
+    this.ripples.unshift({ x, y, radius, time: currTime });
+    this.ripples = this.ripples
+      .slice(0, maxRipples)
+      .filter((ripple) => ripple.time > cutoffTime);
   }
 
   createSpider() {
@@ -575,13 +682,16 @@ export default class Demo extends Phaser.Scene {
       const maxHealth = spider.getData(berryData.START_HEALTH) as number;
       health -= delta;
       if (health <= 0) {
+        this.addRipple(spider.body.position.x, spider.body.position.y, 150);
         spider.destroy();
         //to-do play spider drown sound
       }
       spider.setData(berryData.CURRENT_HEALTH, health);
 
+      const minFade = 0.2;
       const healthPercent = (health / maxHealth) * 100;
-      (spider as Phaser.Physics.Matter.Image).alpha = healthPercent / 100;
+      (spider as Phaser.Physics.Matter.Image).alpha =
+        healthPercent * 0.01 * (1.0 - minFade) + minFade;
     });
   }
 
@@ -650,6 +760,7 @@ export default class Demo extends Phaser.Scene {
       );
       rock.setScale(getRandomFloat(1, 1.2));
       rock.setAngle(getRandomInt(0, 360));
+      this.rocks.add(rock);
     }
   }
 }
