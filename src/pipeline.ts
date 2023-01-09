@@ -14,6 +14,7 @@ const WaterPipeline = new Phaser.Class({
         "uMainSampler",
         "uResolution",
         "uTime",
+        "uStartTime",
       ],
     });
   },

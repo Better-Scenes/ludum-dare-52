@@ -110,6 +110,7 @@ export default class Demo extends Phaser.Scene {
   sounds: { [key: string]: Phaser.Sound.BaseSound } = {};
   rope: Phaser.GameObjects.Rope;
   shader: Phaser.Renderer.WebGL.Pipelines.SinglePipeline;
+  startTime: number = Date.now();
 
   constructor() {
     super("GameScene");
@@ -166,6 +167,7 @@ export default class Demo extends Phaser.Scene {
       )
     );
     this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
+    this.shader.set1f("uStartTime", Date.now() - this.startTime);
 
     const water = this.add
       .tileSprite(400, 300, config.scale?.width, 600, "water")
@@ -207,7 +209,7 @@ export default class Demo extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    this.shader.set1f("uTime", time * 0.005);
+    this.shader.set1f("uTime", Date.now() - this.startTime);
 
     this.reduceSpiderHealth(delta);
 
