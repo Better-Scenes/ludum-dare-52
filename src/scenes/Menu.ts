@@ -3,6 +3,7 @@ import config from "../config";
 import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 
 import {
+  assets,
   renderTextAt,
   getScreenHalfWidth,
   getScreenHalfHeight,
@@ -23,14 +24,18 @@ export default class Menu extends Phaser.Scene {
       url: UIPlugin,
       sceneKey: "rexUI",
     });
-    this.load.image("cranberry", "assets/cranberry.png");
-    this.load.image("water", "assets/water.png");
-    this.load.audio("soundtrack", "assets/bogger-soundtrack.mp3");
+    this.load.image(assets.CRANBERRY, "assets/cranberry.png");
+    this.load.image(assets.WATER, "assets/water.png");
+    this.load.audio(assets.SOUNDTRACK, "assets/bogger-soundtrack.mp3");
+    this.load.image(assets.PONTOON, "assets/pontoon.png");
+    this.load.image(assets.COLLECTOR, "assets/collector.png");
+    this.load.image(assets.SPIDER, "assets/spider.png");
+    this.load.image(assets.ROCK, "assets/rock.png");
   }
 
   create(input: object) {
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
-    this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
+    // this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
 
     const COLOR_PRIMARY = 0x4e342e;
     const COLOR_LIGHT = 0x7b5e57;
@@ -73,64 +78,7 @@ export default class Menu extends Phaser.Scene {
       mouseCircle.position.y = pointer.worldY;
     });
 
-    renderTextAt(
-      this,
-      "Bogger",
-      getScreenHalfWidth(),
-      getScreenHalfHeight() - 50
-    ).setFontSize(36);
-    renderTextAt(
-      this,
-      "A game of collecting cranberries",
-      getScreenHalfWidth(),
-      getScreenHalfHeight() - 20
-    );
-
-    this.add.text(
-      250,
-      300,
-      `Controls:
-    WASD movement
-    Space to extend the boom
-    Shift to retract`,
-      textStyle
-    );
-
-    this.add.text(
-      250,
-      380,
-      `Goal:
-      Collect the cranberries in the collector
-      Save spiders to increase time limit`,
-      textStyle
-    );
-
-    renderTextAt(
-      this,
-      "Start Game",
-      getScreenHalfWidth(),
-      getScreenHalfHeight() + 150
-    )
-      .setInteractive({ useHandCursor: true })
-      .on("pointerdown", () => this.newGame());
-
-    if (input.score) {
-      renderTextAt(
-        this,
-        `Your score in the previous game: ${input.score}`,
-        getScreenHalfWidth(),
-        getScreenHalfHeight() + 180
-      );
-    }
-    const highScore = localStorage.getItem("highScore");
-    if (highScore) {
-      renderTextAt(
-        this,
-        `The highest score is: ${highScore}`,
-        getScreenHalfWidth(),
-        getScreenHalfHeight() + 200
-      );
-    }
+    this.writeText(input.score);
   }
 
   update(time: number, delta: number): void {}
@@ -150,10 +98,161 @@ export default class Menu extends Phaser.Scene {
       const berry = this.matter.add.image(
         getRandomInt(startX, startX + xrange),
         getRandomInt(startY, startY + yrange),
-        "cranberry",
+        assets.CRANBERRY,
         0,
         { mass: 0.1, scale: { x: 1, y: 1 }, frictionAir: 0.04 }
       );
     }
+  }
+
+  writeText(score: number) {
+    const textObjects: { text: Phaser.GameObjects.Text; offset: number }[] = [];
+    textObjects.push({
+      text: this.add
+        .text(getScreenHalfWidth(), 50, "Bogger", {
+          ...textStyle,
+          fontSize: "36px",
+        })
+        .setOrigin(0.5, 0.5),
+      offset: 10,
+    });
+    textObjects.push({
+      text: this.add
+        .text(
+          getScreenHalfWidth(),
+          getScreenHalfHeight() - 20,
+          "A game of collecting cranberries",
+          {
+            ...textStyle,
+            fontSize: "24px",
+          }
+        )
+        .setOrigin(0.5, 0.5),
+      offset: 30,
+    });
+
+    const goalPosition = textObjects.push({
+      text: this.add.text(
+        200,
+        300,
+        `Goal:
+      Surround cranberries     with your pontoon
+      And drag them into the collector
+      Collect as many cranberries     as you can before the time runs out
+      Save spiders     by pushing them onto rocks     to get more time`,
+        textStyle
+      ),
+      offset: 10,
+    });
+
+    // Oh no these are all wrong and based off the wrong position. Oh well
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 185,
+        textObjects[goalPosition - 1].text.y - 115,
+        assets.CRANBERRY
+      )
+      .setStatic(true);
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 335,
+        textObjects[goalPosition - 1].text.y - 115,
+        assets.PONTOON
+      )
+      .setStatic(true);
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 265,
+        textObjects[goalPosition - 1].text.y - 96,
+        assets.COLLECTOR
+      )
+      .setScale(0.4)
+      .setStatic(true);
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 228,
+        textObjects[goalPosition - 1].text.y - 79,
+        assets.CRANBERRY
+      )
+      .setStatic(true);
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 120,
+        textObjects[goalPosition - 1].text.y - 60,
+        assets.SPIDER
+      )
+      .setStatic(true);
+    this.matter.add
+      .image(
+        textObjects[goalPosition - 1].text.x + 335,
+        textObjects[goalPosition - 1].text.y - 60,
+        assets.ROCK
+      )
+      .setScale(0.4)
+      .setStatic(true);
+
+    textObjects.push({
+      text: this.add.text(
+        200,
+        300,
+        `Controls:
+    Move with WASD
+    Extend your pontoon with Space
+    Retract your pontoon with Shift`,
+        textStyle
+      ),
+      offset: 100,
+    });
+    textObjects.push({
+      text: this.add
+        .text(getScreenHalfWidth(), 300, "Start Game", {
+          ...textStyle,
+          fontSize: "24px",
+        })
+        .setInteractive({ useHandCursor: true })
+        .on("pointerdown", () => this.newGame())
+        .setOrigin(0.5, 0.5),
+      offset: 100,
+    });
+    if (score) {
+      textObjects.push({
+        text: this.add
+          .text(
+            getScreenHalfWidth(),
+            300,
+            `Your score in the previous game: ${score}`,
+            textStyle
+          )
+          .setOrigin(0.5, 0.5),
+
+        offset: 10,
+      });
+    }
+
+    const highScore = localStorage.getItem("highScore");
+    if (highScore) {
+      textObjects.push({
+        text: this.add
+          .text(
+            getScreenHalfWidth(),
+            300,
+            `The highest score is: ${highScore}`,
+            textStyle
+          )
+          .setOrigin(0.5, 0.5),
+
+        offset: 10,
+      });
+    }
+
+    textObjects.forEach((item, index) => {
+      if (index === 0) {
+        return;
+      }
+      const previousText = textObjects[index - 1];
+
+      item.text.y =
+        previousText.text.y + previousText.text.height + previousText.offset;
+    });
   }
 }

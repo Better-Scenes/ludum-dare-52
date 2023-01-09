@@ -1,6 +1,25 @@
 import config from "./config";
 import Phaser from "phaser";
 
+export enum assets {
+  CRANBERRY = "cranberry",
+  BUSH = "bush",
+  ROCK = "rock",
+  PADDLESEGMENT = "paddleSegment",
+  PONTOON = "pontoon",
+  PADDLEEND = "paddleEnd",
+  COLLECTOR = "collector",
+  PLAYER = "player",
+  WATER = "water",
+  SPIDER = "spider",
+  PARTICLE = "particle",
+  SOUND_COLLECT = "soundCollect",
+  SOUND_HURT = "soundHurt",
+  SOUND_RESCUE = "soundRescue",
+  SOUNDTRACK = "soundtrack",
+  WATER_SHADER = "waterShader",
+}
+
 export const textStyle = {
   fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif',
   color: "black",

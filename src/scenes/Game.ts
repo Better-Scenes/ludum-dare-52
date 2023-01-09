@@ -2,6 +2,7 @@ import Phaser from "phaser";
 
 import config from "../config";
 import {
+  assets,
   getRandomFloat,
   getRandomInt,
   getRandomVertexColors,
@@ -13,25 +14,6 @@ import {
 import WaterPipeline from "../pipeline";
 
 import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
-
-enum assets {
-  CRANBERRY = "cranberry",
-  BUSH = "bush",
-  ROCK = "rock",
-  PADDLESEGMENT = "paddleSegment",
-  PONTOON = "pontoon",
-  PADDLEEND = "paddleEnd",
-  COLLECTOR = "collector",
-  PLAYER = "player",
-  WATER = "water",
-  SPIDER = "spider",
-  PARTICLE = "particle",
-  SOUND_COLLECT = "soundCollect",
-  SOUND_HURT = "soundHurt",
-  SOUND_RESCUE = "soundRescue",
-  SOUNDTRACK = "soundtrack",
-  WATER_SHADER = "waterShader",
-}
 
 enum berryData {
   START_HEALTH = "startHealth",

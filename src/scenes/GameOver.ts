@@ -3,6 +3,7 @@ import {
   renderTextAt,
   getScreenHalfWidth,
   getScreenHalfHeight,
+  assets,
 } from "../utils";
 
 interface GameOverProps {
@@ -16,7 +17,7 @@ export default class GameOver extends Phaser.Scene {
 
   preload() {
     // todo: no-op
-    this.load.image("water", "assets/water.png");
+    this.load.image(assets.WATER, "assets/water.png");
   }
 
   create(input: GameOverProps) {
