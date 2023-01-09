@@ -167,7 +167,6 @@ export default class Demo extends Phaser.Scene {
       )
     );
     this.shader.set2f("uResolution", config.scale?.width, config.scale?.height);
-    this.shader.set1f("uStartTime", Date.now() - this.startTime);
 
     const water = this.add
       .tileSprite(400, 300, config.scale?.width, 600, "water")
@@ -210,6 +209,8 @@ export default class Demo extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     this.shader.set1f("uTime", Date.now() - this.startTime);
+    this.shader.set1i("uNumRipples", 2);
+    this.shader.set3fv("uRipples", [400, 300, 0, 300, 200, 500]);
 
     this.reduceSpiderHealth(delta);
 
