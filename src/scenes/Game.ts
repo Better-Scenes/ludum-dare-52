@@ -11,6 +11,8 @@ import {
   getTintForVertexColor,
 } from "../utils";
 
+import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
+
 enum assets {
   CRANBERRY = "cranberry",
   BUSH = "bush",
@@ -26,6 +28,7 @@ enum assets {
   SOUND_COLLECT = "soundCollect",
   SOUND_HURT = "soundHurt",
   SOUND_RESCUE = "soundRescue",
+  SOUNDTRACK = "soundtrack",
 }
 
 enum berryData {
@@ -124,6 +127,12 @@ export default class Demo extends Phaser.Scene {
   }
 
   preload() {
+    this.load.scenePlugin({
+      key: "rexuiplugin",
+      url: UIPlugin,
+      sceneKey: "rexUI",
+    });
+
     this.load.image(assets.CRANBERRY, "assets/cranberry.png");
     this.load.image(assets.BUSH, "assets/bush.png");
     this.load.image(assets.ROCK, "assets/rock.png");
@@ -188,6 +197,32 @@ export default class Demo extends Phaser.Scene {
         this.scene.start("Menu");
       }
     });
+
+    const COLOR_PRIMARY = 0x4e342e;
+    const COLOR_LIGHT = 0x7b5e57;
+    const COLOR_DARK = 0x260e04;
+    this.rexUI.add
+      .slider({
+        x: 770,
+        y: 593,
+        width: 50,
+        height: 5,
+        orientation: "x",
+        value: this.sound.volume,
+
+        track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 3, COLOR_DARK),
+        thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 5, COLOR_LIGHT),
+
+        valuechangeCallback: (value) => {
+          this.sound.setVolume(value);
+        },
+        space: {
+          top: 4,
+          bottom: 4,
+        },
+        input: "drag", // 'drag'|'click'
+      })
+      .layout();
   }
 
   update(time: number, delta: number): void {

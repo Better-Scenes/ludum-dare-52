@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import config from "../config";
+import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 
 import {
   renderTextAt,
@@ -9,19 +10,62 @@ import {
   textStyle,
 } from "../utils";
 
+let isMusicPlaying = false;
+
 export default class Menu extends Phaser.Scene {
   constructor() {
     super("Menu");
   }
 
   preload() {
+    this.load.scenePlugin({
+      key: "rexuiplugin",
+      url: UIPlugin,
+      sceneKey: "rexUI",
+    });
     this.load.image("cranberry", "assets/cranberry.png");
     this.load.image("water", "assets/water.png");
+    this.load.audio("soundtrack", "assets/bogger-soundtrack.mp3");
   }
 
   create(input: object) {
     const water = this.add.tileSprite(400, 300, 800, 600, "water");
     this.createBerries(300, 10, 10, config.scale?.width, config.scale?.height);
+
+    const COLOR_PRIMARY = 0x4e342e;
+    const COLOR_LIGHT = 0x7b5e57;
+    const COLOR_DARK = 0x260e04;
+    this.rexUI.add
+      .slider({
+        x: 770,
+        y: 593,
+        width: 50,
+        height: 5,
+        orientation: "x",
+        value: this.sound.volume,
+
+        track: this.rexUI.add.roundRectangle(0, 0, 0, 0, 3, COLOR_DARK),
+        thumb: this.rexUI.add.roundRectangle(0, 0, 0, 0, 5, COLOR_LIGHT),
+
+        valuechangeCallback: (value) => {
+          this.sound.setVolume(value);
+        },
+        space: {
+          top: 4,
+          bottom: 4,
+        },
+        input: "drag", // 'drag'|'click'
+      })
+      .layout();
+
+    this.sound.add("soundtrack");
+    if (!isMusicPlaying) {
+      this.sound.play("soundtrack", {
+        volume: 0.1,
+        loop: true,
+      });
+      isMusicPlaying = true;
+    }
 
     const mouseCircle = this.matter.add.circle(500, 500, 25, { mass: 0.1 });
     this.input.on("pointermove", (pointer) => {
