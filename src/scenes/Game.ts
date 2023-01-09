@@ -42,6 +42,10 @@ enum spiderData {
   SPIDER_VALUE = "spiderValue",
 }
 
+// game
+const gameLengthInMs = 1 * 60 * 1000;
+const maxRipples = 64;
+
 // pontoon/segments/rope/snake
 const segmentLength = 20;
 const numberOfSegments = 10;
@@ -52,7 +56,7 @@ const jointDamping = 1.0;
 const paddleMass = 1.0;
 const paddleFriction = 0.5;
 const paddleCooldownMilliseconds = 120;
-const gameLengthInMs = 1 * 60 * 1000;
+const paddleRippleProbability = 0.04;
 
 // Player
 const playerMass = 2;
@@ -67,6 +71,7 @@ const playerRippleRadius = 100;
 const spiderSpawnProbability = 0.002;
 const spiderLifetimeMilliseconds = 20000;
 const spiderRescueSeconds = 5;
+const spiderRippleProbability = 0.02;
 
 // Berries
 const edgeRepulsionForce = 0.00005;
@@ -76,6 +81,7 @@ const rareBerryChance = 0.01;
 
 // Rocks
 const numberOfRocks = 20;
+const rockRippleProbability = 0.0; // 0.01
 
 // Collector
 const collectorPosition = new Phaser.Math.Vector2(
@@ -105,6 +111,7 @@ export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
   spiders: Phaser.GameObjects.Group;
+  rocks: Phaser.GameObjects.Group;
   berryCollisionCategory = 0;
   spiderCollisionCategory = 0;
   segmentGroup = 0;
@@ -165,6 +172,7 @@ export default class Demo extends Phaser.Scene {
     this.cooldown = 0;
     this.berries = this.add.group();
     this.spiders = this.add.group();
+    this.rocks = this.add.group();
 
     this.sounds[assets.SOUND_COLLECT] = this.sound.add(assets.SOUND_COLLECT);
     this.sounds[assets.SOUND_HURT] = this.sound.add(assets.SOUND_HURT);
@@ -289,6 +297,34 @@ export default class Demo extends Phaser.Scene {
       this.playerRippleCooldown = Date.now();
     }
 
+    this.segments.forEach((segment) => {
+      if (Math.random() > paddleRippleProbability) {
+        return;
+      }
+      const body = segment.item.body;
+      const paddleSpeed = new Phaser.Math.Vector2(body.velocity).length();
+      if (paddleSpeed < 0.1) {
+        return;
+      }
+      this.addRipple(body.position.x, body.position.y, 30 + Math.random() * 30);
+    });
+
+    this.spiders.children.each((spider) => {
+      if (Math.random() < spiderRippleProbability) {
+        this.addRipple(
+          spider.body.position.x,
+          spider.body.position.y,
+          20 + Math.random() * 30
+        );
+      }
+    });
+
+    this.rocks.children.each((rock) => {
+      if (Math.random() < rockRippleProbability) {
+        this.addRipple(rock.body.position.x, rock.body.position.y, 80);
+      }
+    });
+
     if (
       this.keys.retract.isDown &&
       this.segments.length > 1 &&
@@ -385,7 +421,7 @@ export default class Demo extends Phaser.Scene {
     const cutoffTime = currTime - 1000 * 10;
     this.ripples.unshift({ x, y, radius, time: currTime });
     this.ripples = this.ripples
-      .slice(0, 64)
+      .slice(0, maxRipples)
       .filter((ripple) => ripple.time > cutoffTime);
   }
 
@@ -611,13 +647,16 @@ export default class Demo extends Phaser.Scene {
       const maxHealth = spider.getData(berryData.START_HEALTH) as number;
       health -= delta;
       if (health <= 0) {
+        this.addRipple(spider.body.position.x, spider.body.position.y, 150);
         spider.destroy();
         //to-do play spider drown sound
       }
       spider.setData(berryData.CURRENT_HEALTH, health);
 
+      const minFade = 0.2;
       const healthPercent = (health / maxHealth) * 100;
-      (spider as Phaser.Physics.Matter.Image).alpha = healthPercent / 100;
+      (spider as Phaser.Physics.Matter.Image).alpha =
+        healthPercent * 0.01 * (1.0 - minFade) + minFade;
     });
   }
 
@@ -686,6 +725,7 @@ export default class Demo extends Phaser.Scene {
       );
       rock.setScale(getRandomFloat(1, 1.2));
       rock.setAngle(getRandomInt(0, 360));
+      this.rocks.add(rock);
     }
   }
 }
