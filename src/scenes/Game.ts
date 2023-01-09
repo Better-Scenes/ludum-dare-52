@@ -110,6 +110,52 @@ type Ripple = {
   radius: number;
 };
 
+class ProgressBar {
+  xpos: number;
+  ypos: number;
+  barWidth: number;
+  barHeight: number;
+  progressBar: Phaser.GameObjects.Graphics;
+  progressBox: Phaser.GameObjects.Graphics;
+  fillColor: number;
+  alpha: number;
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    backColor: number,
+    fillColor: number,
+    alpha = 1.0
+  ) {
+    this.xpos = x;
+    this.ypos = y;
+    this.barWidth = width;
+    this.barHeight = height;
+    this.fillColor = fillColor;
+    this.alpha = alpha;
+    this.progressBox = scene.add.graphics();
+    this.progressBar = scene.add.graphics();
+    this.progressBox.fillStyle(backColor, alpha);
+    this.progressBox.fillRect(x, y, width, height);
+  }
+  update(fraction: number) {
+    this.progressBar.clear();
+    this.progressBar.fillStyle(this.fillColor, this.alpha);
+    this.progressBar.fillRect(
+      this.xpos,
+      this.ypos,
+      this.barWidth * Math.max(0.0, Math.min(1.0, fraction)),
+      this.barHeight
+    );
+  }
+  remove() {
+    this.progressBar.destroy();
+    this.progressBox.destroy();
+  }
+}
+
 export default class Demo extends Phaser.Scene {
   initialized = false;
   berries: Phaser.GameObjects.Group;
@@ -132,6 +178,7 @@ export default class Demo extends Phaser.Scene {
   startTime: number = Date.now();
   ripples: Ripple[] = [];
   playerRippleCooldown = 0;
+  countdownProgressBar: ProgressBar;
 
   constructor() {
     super("GameScene");
@@ -169,7 +216,6 @@ export default class Demo extends Phaser.Scene {
       this.berryCollisionCategory = this.matter.world.nextCategory();
       this.spiderCollisionCategory = this.matter.world.nextCategory();
       this.segmentGroup = this.matter.world.nextGroup(true);
-
       this.shader = this.renderer.pipelines.add(
         "Water",
         new WaterPipeline(
@@ -261,6 +307,20 @@ export default class Demo extends Phaser.Scene {
         input: "drag", // 'drag'|'click'
       })
       .layout();
+
+    if (this.countdownProgressBar) {
+      this.countdownProgressBar.remove();
+    }
+    this.countdownProgressBar = new ProgressBar(
+      this,
+      20,
+      10,
+      config.scale?.width - 40,
+      10,
+      0x227777,
+      0x22d0d0,
+      1.0
+    );
   }
 
   update(time: number, delta: number): void {
@@ -297,6 +357,7 @@ export default class Demo extends Phaser.Scene {
       this.endGame();
     }
 
+    this.countdownProgressBar.update(timeRemaining / gameLengthInMs);
     this.uiText.setText([
       "Score: " + score.toString(),
       "Time: " + parseInt(timeRemaining / 1000).toString(),
