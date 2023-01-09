@@ -43,8 +43,8 @@ void main() {
 
     float power = (amp + 1.0) * 0.5;
 
-    // vec4 texture = texture2D(uMainSampler, outTexCoord);
-    // gl_FragColor = texture * power;
+    vec4 texture = texture2D(uMainSampler, outTexCoord);
+    gl_FragColor = texture * power;
 
-    gl_FragColor = vec4(power, power, power, 1.0);
+    // gl_FragColor = vec4(power, power, power, 1.0);
 }

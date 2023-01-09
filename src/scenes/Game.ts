@@ -60,7 +60,8 @@ const playerMoveForce = 0.02;
 const playerSpoolForceMultiplier = 0.7;
 const playerRetractForceMultiplier = 1.0;
 const playerGrabStiffness = 0.2;
-const playerRippleCooldownMilliseconds = 150;
+const playerRippleCooldownMilliseconds = 50;
+const playerRippleRadius = 100;
 
 // Spiders
 const spiderSpawnProbability = 0.002;
@@ -284,7 +285,7 @@ export default class Demo extends Phaser.Scene {
       playerSpeed > 0.1 &&
       this.playerRippleCooldown < Date.now() - playerRippleCooldownMilliseconds
     ) {
-      this.addRipple(this.player.x, this.player.y, 50);
+      this.addRipple(this.player.x, this.player.y, playerRippleRadius);
       this.playerRippleCooldown = Date.now();
     }
 
